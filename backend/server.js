@@ -8,12 +8,8 @@ import mongoose from "mongoose";
 
 import admin from "./firebaseAdmin.js";
 import authRoutes from "./routes/authRoutes.js";
-// backend/server.js (add these at top with other imports)
 import adminRoutes from "./routes/adminRoutes.js";
 import publicationRoutes from "./routes/publicationRoutes.js";
-
-app.use("/api/admin", adminRoutes);
-app.use("/api/publications", publicationRoutes);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -22,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 const corsOptions = {
   origin: [
     "http://localhost:5173",
-    // add your production frontend URLs here later:
+    // add production URLs later, e.g.:
     // "https://nedaas-lab.web.app",
     // "https://nedaas-lab.firebaseapp.com",
   ],
@@ -67,6 +63,8 @@ app.get("/status", (req, res) => {
 
 // ---------- API ROUTES ----------
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/publications", publicationRoutes);
 
 // ---------- GLOBAL ERROR HANDLER ----------
 app.use((err, req, res, next) => {
@@ -74,7 +72,6 @@ app.use((err, req, res, next) => {
 
   res.status(err.status || 500).json({
     message: err.message || "Unexpected server error",
-    // Only expose stack in development
     ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
   });
 });
@@ -85,7 +82,9 @@ async function startServer() {
     await connectMongoDB();
 
     if (!admin.apps.length) {
-      console.warn("⚠️ Firebase Admin is NOT initialized. Check firebaseAdmin.js and .env");
+      console.warn(
+        "⚠️ Firebase Admin is NOT initialized. Check firebaseAdmin.js and .env"
+      );
     } else {
       console.log("✅ Firebase Admin initialized");
     }

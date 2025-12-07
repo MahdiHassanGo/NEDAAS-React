@@ -73,13 +73,13 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Find or create user in MongoDB
+    // Find or create user in MongoDB (by EMAIL, not UID)
     let user;
     try {
-      user = await User.findOne({ uid });
+      user = await User.findOne({ email });
 
       if (!user) {
-        // Create new user
+        // No existing user → create new
         user = new User({
           uid,
           email,
@@ -90,8 +90,14 @@ router.post("/login", async (req, res) => {
         await user.save();
         console.log(`✅ New user created: ${email} with role: ${user.role}`);
       } else {
-        // Update role/displayName if needed
+        // Existing user → sync uid, role (if admin), and displayName
         let changed = false;
+
+        if (!user.uid && uid) {
+          user.uid = uid;
+          changed = true;
+          console.log(`🔗 Linked Firebase UID for ${email}`);
+        }
 
         if (isAdmin && user.role !== "admin") {
           user.role = "admin";
@@ -135,4 +141,3 @@ router.post("/login", async (req, res) => {
 });
 
 export default router;
- 

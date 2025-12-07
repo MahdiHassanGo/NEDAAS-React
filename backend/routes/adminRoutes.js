@@ -57,7 +57,7 @@ router.post("/users/manual", async (req, res) => {
 
   let user = await User.findOne({ email });
 
-  if (user) {
+   if (user) {
     user.role = role;
     if (displayName) user.displayName = displayName;
     await user.save();
@@ -66,12 +66,14 @@ router.post("/users/manual", async (req, res) => {
       email,
       displayName: displayName || null,
       role,
-      uid: null, // will link later when they login
+      uid: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     });
   }
 
+
   res.status(201).json(user);
 });
+
 
 // POST /api/admin/publications
 router.post("/publications", async (req, res) => {
