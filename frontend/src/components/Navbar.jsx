@@ -1,10 +1,27 @@
+// src/components/Navbar.jsx
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
+function getDashboardPath(role) {
+  switch (role) {
+    case "admin":
+      return "/dashboard/admin";
+    case "director":
+      return "/dashboard/director";
+    case "advisor":
+      return "/dashboard/advisor";
+    case "lead":
+      return "/dashboard/lead";
+    case "member":
+    default:
+      return "/dashboard/member";
+  }
+}
 
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, role, logout, loading } = useAuth();
 
   const scrollToSection = (sectionId) => {
     if (location.pathname === "/") {
@@ -25,6 +42,13 @@ export default function Navbar() {
     { id: "contact", label: "Contact" },
   ];
 
+  const handleLogout = async () => {
+    await logout();
+    navigate("/", { replace: true });
+  };
+
+  const dashboardPath = getDashboardPath(role);
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,11 +62,13 @@ export default function Navbar() {
             />
             <div>
               <div className="font-bold text-deepTeal">NEDAAS Lab</div>
-              <div className="text-xs text-midTeal">Neural Engineering, Data Analytics & Applied Science</div>
+              <div className="text-xs text-midTeal">
+                Neural Engineering, Data Analytics &amp; Applied Science
+              </div>
             </div>
           </div>
 
-          {/* Right: Nav Links + Login */}
+          {/* Right: Nav Links + Auth */}
           <div className="flex items-center gap-5">
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-5">
@@ -57,14 +83,23 @@ export default function Navbar() {
               ))}
             </div>
 
-            {/* Login Button */}
+            {/* Auth Buttons */}
             {firebaseUser ? (
-              <Link
-                to="/dashboard/member"
-                className="px-4 py-2 rounded-full bg-gradient-to-r from-midTeal to-accentTeal text-white font-medium hover:shadow-lg transition-shadow"
-              >
-                Dashboard
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  to={dashboardPath}
+                  className="px-4 py-2 rounded-full bg-gradient-to-r from-midTeal to-accentTeal text-white font-medium hover:shadow-lg transition-shadow text-sm md:text-base"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  disabled={loading}
+                  className="px-3 py-2 rounded-full border border-midTeal text-midTeal hover:bg-midTeal hover:text-white transition-colors text-xs md:text-sm"
+                >
+                  {loading ? "..." : "Logout"}
+                </button>
+              </div>
             ) : (
               <Link
                 to="/login"
@@ -79,4 +114,3 @@ export default function Navbar() {
     </nav>
   );
 }
-

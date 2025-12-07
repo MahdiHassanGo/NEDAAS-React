@@ -1,68 +1,104 @@
+// src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase";
+import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { auth, googleProvider } from "../firebase";
+import { loginWithFirebaseToken } from "../api/authApi";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [firebaseUser, setFirebaseUser] = useState(null);
+  const [backendUser, setBackendUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
-  const fetchRole = async (user) => {
+  // Helper to call backend with Firebase ID token
+  const performBackendLogin = async (user) => {
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ idToken }),
-      });
+      setLoading(true);
+      setAuthError(null);
 
-      if (response.ok) {
-        const data = await response.json();
-        setRole(data.role || "member");
-      } else {
-        setRole("member");
-      }
-    } catch (error) {
-      console.error("Error fetching role:", error);
-      if (error.message.includes("Failed to fetch") || error.message.includes("ERR_CONNECTION_REFUSED")) {
-        console.error("Backend server is not running. Please start it with: cd backend && npm start");
-      }
-      setRole("member");
+      const idToken = await user.getIdToken();
+      const data = await loginWithFirebaseToken(idToken);
+
+      setBackendUser(data.user);
+      setRole(data.role || "member");
+      setAuthError(null);
+    } catch (err) {
+      console.error("Backend login failed:", err);
+      setBackendUser(null);
+      setRole(null);
+      setAuthError(err.message || "Backend login failed");
+
+      // If backend fails, also sign out from Firebase
+      await signOut(auth);
+      setFirebaseUser(null);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Listen to Firebase auth state (page reload + initial load)
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setFirebaseUser(user);
-      if (user) {
-        await fetchRole(user);
-      } else {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setFirebaseUser(null);
+        setBackendUser(null);
         setRole(null);
+        setAuthError(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      setFirebaseUser(user);
+      await performBackendLogin(user);
     });
 
-    return () => unsubscribe();
+    return () => unsub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Called from Login page
+  const loginWithGoogle = async () => {
+    setAuthError(null);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      setFirebaseUser(user);
+      await performBackendLogin(user);
+    } catch (err) {
+      console.error("Firebase login error:", err);
+      setAuthError(err.message || "Login failed");
+      throw err;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } finally {
+      setFirebaseUser(null);
+      setBackendUser(null);
+      setRole(null);
+      setAuthError(null);
+    }
+  };
 
   const value = {
     firebaseUser,
+    backendUser,
     role,
     loading,
+    authError,
+    loginWithGoogle,
+    logout,
+    isAdmin: role === "admin",
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
+  return useContext(AuthContext);
 }
-

@@ -1,44 +1,63 @@
 // backend/server.js
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
-import authRoutes from "./routes/authRoutes.js";
-import admin from "./firebaseAdmin.js";
 
-dotenv.config();
+import admin from "./firebaseAdmin.js";
+import authRoutes from "./routes/authRoutes.js";
+// backend/server.js (add these at top with other imports)
+import adminRoutes from "./routes/adminRoutes.js";
+import publicationRoutes from "./routes/publicationRoutes.js";
+
+app.use("/api/admin", adminRoutes);
+app.use("/api/publications", publicationRoutes);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  })
-);
+// ---------- CORS CONFIG ----------
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    // add your production frontend URLs here later:
+    // "https://nedaas-lab.web.app",
+    // "https://nedaas-lab.firebaseapp.com",
+  ],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
-// Connect to MongoDB
-if (!process.env.MONGODB_URI) {
-  console.error("❌ ERROR: MONGODB_URI is not set in .env file");
-} else {
-  mongoose
-    .connect(process.env.MONGODB_URI)
-    .then(() => {
-      console.log("✅ Connected to MongoDB");
-    })
-    .catch((error) => {
-      console.error("❌ MongoDB connection error:", error);
-      console.error("Please check your MONGODB_URI in .env file");
-    });
+// ---------- MONGODB CONNECTION ----------
+async function connectMongoDB() {
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
+    throw new Error("MONGODB_URI is not set in .env file");
+  }
+
+  try {
+    await mongoose.connect(uri);
+    console.log("✅ Connected to MongoDB");
+  } catch (error) {
+    console.error("❌ MongoDB connection error:", error.message);
+    console.error("Please check your MONGODB_URI in .env file");
+    throw error;
+  }
 }
 
-// Status route
+// ---------- HEALTH / STATUS ROUTES ----------
 app.get("/", (req, res) => {
+  res.send("NEDAAS Lab backend is alive 🚀");
+});
+
+app.get("/status", (req, res) => {
   res.json({
-    message: "NEDAAS backend is running",
+    message: "NEDAAS backend status",
     firebaseAdmin: admin.apps.length > 0 ? "Initialized" : "Not initialized",
     mongodb:
       mongoose.connection.readyState === 1 ? "Connected" : "Not connected",
@@ -46,18 +65,38 @@ app.get("/", (req, res) => {
   });
 });
 
-// API routes
+// ---------- API ROUTES ----------
 app.use("/api/auth", authRoutes);
 
-// Error handler
+// ---------- GLOBAL ERROR HANDLER ----------
 app.use((err, req, res, next) => {
-  console.error("Express error:", err);
-  res.status(500).json({
-    message: "Unexpected server error",
-    error: err.message,
+  console.error("❌ Express error:", err);
+
+  res.status(err.status || 500).json({
+    message: err.message || "Unexpected server error",
+    // Only expose stack in development
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
-});
+// ---------- START SERVER ----------
+async function startServer() {
+  try {
+    await connectMongoDB();
+
+    if (!admin.apps.length) {
+      console.warn("⚠️ Firebase Admin is NOT initialized. Check firebaseAdmin.js and .env");
+    } else {
+      console.log("✅ Firebase Admin initialized");
+    }
+
+    app.listen(PORT, () => {
+      console.log(`🚀 NEDAAS backend running at http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start NEDAAS backend:", error.message);
+    process.exit(1);
+  }
+}
+
+startServer();
