@@ -15,24 +15,25 @@ const userSchema = new mongoose.Schema(
     },
     displayName: String,
 
-    // role for dashboard routing
+    // Extra profile fields (for members)
+    mobile: String,
+    studentId: String,
+    studentEmail: String,
+
+    // Lead reference (who this user is under)
+    lead: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     role: {
       type: String,
       enum: ["member", "lead", "advisor", "director", "admin"],
       default: "member",
     },
-
-    // extra fields used in team / lead features
-    mobile: { type: String },
-    studentId: { type: String },
-    studentEmail: { type: String },
-
-    // reference to lead (for members)
-    lead: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
 
-const User = mongoose.model("User", userSchema);
-
-export default User; // 👈 VERY IMPORTANT
+export default mongoose.model("User", userSchema);

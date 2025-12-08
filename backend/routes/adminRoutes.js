@@ -271,3 +271,89 @@ router.get("/conferences", async (req, res) => {
     .populate("authors", "email displayName");
   res.json(confs);
 });
+
+// POST /api/admin/conferences
+// Create a conference for a given lead (admin-side)
+router.post("/conferences", async (req, res) => {
+  try {
+    const { title, date, link, status, leadId, authorIds } = req.body;
+
+    if (!title || !leadId) {
+      return res.status(400).json({ message: "title and leadId are required" });
+    }
+
+    const lead = await User.findById(leadId);
+    if (!lead || lead.role !== "lead") {
+      return res
+        .status(400)
+        .json({ message: "Lead not found or not a lead user" });
+    }
+
+    const conf = await Conference.create({
+      title,
+      date,
+      link,
+      lead: lead._id,
+      authors: authorIds || [],
+      status: status || "submitted",
+    });
+
+    const populated = await Conference.findById(conf._id)
+      .populate("lead", "displayName email")
+      .populate("authors", "displayName email");
+
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error("Admin create conference error:", err);
+    res.status(500).json({ message: "Failed to create conference" });
+  }
+});
+
+// PUT /api/admin/conferences/:id
+// Update any conference (title/date/link/authors/status)
+router.put("/conferences/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, date, link, status, authorIds } = req.body;
+
+    const conf = await Conference.findById(id);
+    if (!conf) {
+      return res.status(404).json({ message: "Conference not found" });
+    }
+
+    if (title !== undefined) conf.title = title;
+    if (date !== undefined) conf.date = date;
+    if (link !== undefined) conf.link = link;
+    if (status !== undefined) conf.status = status;
+    if (authorIds !== undefined) conf.authors = authorIds;
+
+    await conf.save();
+
+    const populated = await Conference.findById(conf._id)
+      .populate("lead", "displayName email")
+      .populate("authors", "displayName email");
+
+    res.json(populated);
+  } catch (err) {
+    console.error("Admin update conference error:", err);
+    res.status(500).json({ message: "Failed to update conference" });
+  }
+});
+
+// DELETE /api/admin/conferences/:id
+// Remove a conference
+router.delete("/conferences/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const conf = await Conference.findByIdAndDelete(id);
+    if (!conf) {
+      return res.status(404).json({ message: "Conference not found" });
+    }
+
+    res.json({ message: "Conference deleted" });
+  } catch (err) {
+    console.error("Admin delete conference error:", err);
+    res.status(500).json({ message: "Failed to delete conference" });
+  }
+});

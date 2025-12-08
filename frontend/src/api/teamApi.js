@@ -63,9 +63,56 @@ export function updateMemberInfo(idToken, memberId, data) {
   );
 }
 
+// DELETE /api/admin/teams/members/:memberId  (unassign from lead)
+export function removeMemberFromLead(idToken, memberId) {
+  return authFetch(
+    `/api/admin/teams/members/${memberId}`,
+    {
+      method: "DELETE",
+    },
+    idToken
+  );
+}
+
 // GET /api/admin/conferences
 export function getAllConferences(idToken) {
   return authFetch("/api/admin/conferences", { method: "GET" }, idToken);
+}
+
+// POST /api/admin/conferences
+export function createConferenceForLead(idToken, data) {
+  // data: { title, date, link, status, leadId, authorIds? }
+  return authFetch(
+    "/api/admin/conferences",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
+// PUT /api/admin/conferences/:id
+export function updateConferenceByAdmin(idToken, confId, data) {
+  return authFetch(
+    `/api/admin/conferences/${confId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
+// DELETE /api/admin/conferences/:id
+export function deleteConferenceByAdmin(idToken, confId) {
+  return authFetch(
+    `/api/admin/conferences/${confId}`,
+    {
+      method: "DELETE",
+    },
+    idToken
+  );
 }
 
 /* =========================================================
@@ -106,12 +153,15 @@ export function updateConference(idToken, confId, data) {
   );
 }
 
-// (optional) default export, in case you ever import teamApi as a whole
 const teamApi = {
   getAllTeams,
   assignMemberToLead,
   updateMemberInfo,
+  removeMemberFromLead,
   getAllConferences,
+  createConferenceForLead,
+  updateConferenceByAdmin,
+  deleteConferenceByAdmin,
   getMyTeam,
   getMyConferences,
   createConference,
