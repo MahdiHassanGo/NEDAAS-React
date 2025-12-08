@@ -153,6 +153,18 @@ export function updateConference(idToken, confId, data) {
   );
 }
 
+// PUT /api/lead/members/:memberId  (lead updates their member)
+export function updateMyMember(idToken, memberId, data) {
+  return authFetch(
+    `/api/lead/members/${memberId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
 const teamApi = {
   getAllTeams,
   assignMemberToLead,
@@ -166,6 +178,7 @@ const teamApi = {
   getMyConferences,
   createConference,
   updateConference,
+  updateMyMember, // 🔹 add this
 };
 
 export default teamApi;

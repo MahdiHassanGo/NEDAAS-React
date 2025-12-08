@@ -12,13 +12,45 @@ export async function verifyFirebaseToken(req, res, next) {
   const token = authHeader.split(" ")[1];
 
   try {
+    // 1) Verify Firebase token
     const decoded = await admin.auth().verifyIdToken(token);
-    const user = await User.findOne({ uid: decoded.uid });
+    const { uid, email, name } = decoded;
 
-    if (!user) {
-      return res.status(401).json({ message: "User not found in database" });
+    let user = null;
+
+    // 2) Try to find by uid first
+    if (uid) {
+      user = await User.findOne({ uid });
     }
 
+    // 3) If not found, try to find by email (manual users, etc.)
+    if (!user && email) {
+      user = await User.findOne({ email });
+
+      // If found by email but no uid yet, link them now
+      if (user && uid && !user.uid) {
+        user.uid = uid;
+        await user.save();
+        console.log(`🔗 Linked Firebase UID for user ${email}`);
+      }
+    }
+
+    // 4) If still not found, you can either:
+    //    a) auto-create a default "member" user (below), OR
+    //    b) return 401. I recommend auto-create to make life easier.
+    if (!user) {
+      console.log(
+        `⚠️ No user found for uid=${uid} email=${email}, creating default user`
+      );
+      user = await User.create({
+        uid,
+        email,
+        displayName: name || email || "Unnamed User",
+        role: "member",
+      });
+    }
+
+    // 5) Attach full Mongoose doc to req.user (as before)
     req.user = user;
     next();
   } catch (err) {
@@ -33,4 +65,3 @@ export function requireAdmin(req, res, next) {
   }
   next();
 }
- 

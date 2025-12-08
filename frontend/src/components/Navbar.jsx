@@ -103,9 +103,8 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/login"
-                className="px-4 py-2 rounded-full bg-gradient-to-r from-midTeal to-accentTeal text-white font-medium hover:shadow-lg transition-shadow text-sm md:text-base"
               >
-                Login
+                
               </Link>
             )}
           </div>

@@ -6,7 +6,6 @@ import { verifyFirebaseToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// All lead routes require auth
 router.use(verifyFirebaseToken);
 
 // Helper: ensure user is a lead
