@@ -11,7 +11,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import publicationRoutes from "./routes/publicationRoutes.js";
 import leadRoutes from "./routes/leadRoutes.js";
-
+import leadPublicationRoutes from "./routes/leadPublicationRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -77,6 +77,12 @@ app.use((err, req, res, next) => {
     ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
   });
 });
+// ---------- API ROUTES ----------
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/publications", publicationRoutes);
+app.use("/api/lead", leadRoutes);
+app.use("/api/lead/publications", leadPublicationRoutes); // 👈 ADD THIS
 
 // ---------- START SERVER ----------
 async function startServer() {

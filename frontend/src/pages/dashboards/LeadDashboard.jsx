@@ -9,6 +9,8 @@ import {
   createMyMember,   // 🔹 NEW
   updateMyMember,   // 🔹 existing
 } from "../../api/teamApi";
+// src/pages/dashboards/LeadDashboard.jsx
+import { createPublicationAsLead } from "../../api/publicationApi";
 
 const STATUS_OPTIONS = ["submitted", "accepted", "presented", "published"];
 
@@ -20,6 +22,59 @@ export default function LeadDashboard() {
   const [team, setTeam] = useState(null);
   const [teamLoading, setTeamLoading] = useState(true);
   const [teamError, setTeamError] = useState(null);
+    // PUBLICATIONS (LEAD SUBMISSION)
+  const [pubForm, setPubForm] = useState({
+    meta: "",
+    title: "",
+    authors: "",
+    description: "",
+    tag: "",
+    link: "",
+    linkLabel: "View article",
+  });
+  const [pubMessage, setPubMessage] = useState(null);
+  const [pubError, setPubError] = useState(null);
+  const [pubLoading, setPubLoading] = useState(false);
+
+  const handleLeadPubChange = (e) => {
+    const { name, value } = e.target;
+    setPubForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleLeadPubSubmit = async (e) => {
+    e.preventDefault();
+    if (!firebaseUser) return;
+
+    setPubMessage(null);
+    setPubError(null);
+
+    try {
+      setPubLoading(true);
+      const idToken = await firebaseUser.getIdToken();
+
+      // backend will force status = "pending"
+      await createPublicationAsLead(idToken, pubForm);
+
+      setPubMessage(
+        "Publication submitted successfully. It is now pending admin approval."
+      );
+      setPubForm({
+        meta: "",
+        title: "",
+        authors: "",
+        description: "",
+        tag: "",
+        link: "",
+        linkLabel: "View article",
+      });
+    } catch (err) {
+      console.error("Failed to submit publication:", err);
+      setPubError(err.message || "Failed to submit publication");
+    } finally {
+      setPubLoading(false);
+    }
+  };
+
 
   // Member edit state (lead can edit their members)
   const [memberEdits, setMemberEdits] = useState({});
@@ -343,6 +398,7 @@ export default function LeadDashboard() {
           {[
             { id: "team", label: "Manage Team" },
             { id: "conference", label: "Manage Conference" },
+            { id: "addPublication", label: "Add Publication" },
           ].map((item) => (
             <button
               key={item.id}
@@ -1014,6 +1070,147 @@ export default function LeadDashboard() {
             </div>
           </section>
         )}
+                {/* ADD PUBLICATION (LEAD) */}
+        {activeSection === "addPublication" && (
+          <section>
+            <h1 className="text-3xl font-bold text-deepTeal mb-4">
+              Submit Publication
+            </h1>
+            <p className="text-gray-700 mb-6">
+              Submit your team&apos;s publication to NEDAAS.{" "}
+              <span className="font-semibold">
+                All submissions will be marked as &quot;pending&quot; until an
+                admin reviews and approves them.
+              </span>
+            </p>
+
+            {pubMessage && (
+              <div className="mb-4 px-4 py-2 rounded-lg text-sm bg-green-50 text-green-700 border border-green-200">
+                {pubMessage}
+              </div>
+            )}
+            {pubError && (
+              <div className="mb-4 px-4 py-2 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+                {pubError}
+              </div>
+            )}
+
+            <form
+              onSubmit={handleLeadPubSubmit}
+              className="bg-white rounded-2xl shadow-md border border-gray-200 p-6 max-w-2xl space-y-4"
+            >
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Meta (e.g., 2025 • Conference)
+                  </label>
+                  <input
+                    type="text"
+                    name="meta"
+                    value={pubForm.meta}
+                    onChange={handleLeadPubChange}
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Tag (e.g., Healthcare, ML, Neural Engineering)
+                  </label>
+                  <input
+                    type="text"
+                    name="tag"
+                    value={pubForm.tag}
+                    onChange={handleLeadPubChange}
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={pubForm.title}
+                  onChange={handleLeadPubChange}
+                  required
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Authors
+                </label>
+                <input
+                  type="text"
+                  name="authors"
+                  value={pubForm.authors}
+                  onChange={handleLeadPubChange}
+                  required
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  placeholder="e.g., A. Rahman, B. Karim, ..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Description / Abstract (short)
+                </label>
+                <textarea
+                  name="description"
+                  value={pubForm.description}
+                  onChange={handleLeadPubChange}
+                  required
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                />
+              </div>
+
+              <div className="grid md:grid-cols-[2fr_1fr] gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Link (DOI / URL)
+                  </label>
+                  <input
+                    type="url"
+                    name="link"
+                    value={pubForm.link}
+                    onChange={handleLeadPubChange}
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                    placeholder="https://doi.org/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Link Label
+                  </label>
+                  <input
+                    type="text"
+                    name="linkLabel"
+                    value={pubForm.linkLabel}
+                    onChange={handleLeadPubChange}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={pubLoading}
+                className="px-6 py-2 rounded-full bg-gradient-to-r from-midTeal to-accentTeal text-white text-sm font-medium hover:shadow-lg transition-shadow disabled:opacity-60"
+              >
+                {pubLoading ? "Submitting..." : "Submit Publication"}
+              </button>
+            </form>
+          </section>
+        )}
+
       </div>
     </div>
   );
