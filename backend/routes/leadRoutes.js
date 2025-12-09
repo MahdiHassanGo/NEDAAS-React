@@ -16,6 +16,10 @@ function requireLead(req, res, next) {
   next();
 }
 
+/* ============================
+ * TEAM (LEAD SIDE)
+ * ==========================*/
+
 // GET /api/lead/team
 router.get("/team", requireLead, async (req, res) => {
   const lead = await User.findById(req.user._id);
@@ -33,6 +37,101 @@ router.get("/team", requireLead, async (req, res) => {
     members,
   });
 });
+
+// POST /api/lead/members
+// Lead can create a new member under themselves OR attach an existing user by email
+router.post("/members", requireLead, async (req, res) => {
+  try {
+    const { displayName, email, mobile, studentId, studentEmail } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // If user is already under another lead, block
+      if (user.lead && !user.lead.equals(req.user._id)) {
+        return res
+          .status(400)
+          .json({ message: "User already assigned under another lead" });
+      }
+
+      // Attach/update under current lead
+      user.lead = req.user._id;
+      user.role = user.role || "member";
+      if (displayName) user.displayName = displayName;
+      if (mobile) user.mobile = mobile;
+      if (studentId) user.studentId = studentId;
+      if (studentEmail) user.studentEmail = studentEmail;
+
+      await user.save();
+    } else {
+      // Create brand new member user
+      user = await User.create({
+        email,
+        displayName: displayName || email,
+        mobile: mobile || "",
+        studentId: studentId || "",
+        studentEmail: studentEmail || "",
+        lead: req.user._id,
+        role: "member",
+      });
+    }
+
+    const memberResponse = {
+      _id: user._id,
+      displayName: user.displayName,
+      email: user.email,
+      mobile: user.mobile,
+      studentId: user.studentId,
+      studentEmail: user.studentEmail,
+    };
+
+    res.status(201).json(memberResponse);
+  } catch (err) {
+    console.error("Error creating member by lead:", err);
+    return res
+      .status(500)
+      .json({ message: "Failed to create member under this lead" });
+  }
+});
+
+// PUT /api/lead/members/:memberId
+// Lead can update only members that are under them
+router.put("/members/:memberId", requireLead, async (req, res) => {
+  const { memberId } = req.params;
+  const { displayName, mobile, studentId, studentEmail } = req.body;
+
+  try {
+    const member = await User.findOneAndUpdate(
+      { _id: memberId, lead: req.user._id },
+      {
+        ...(displayName !== undefined && { displayName }),
+        ...(mobile !== undefined && { mobile }),
+        ...(studentId !== undefined && { studentId }),
+        ...(studentEmail !== undefined && { studentEmail }),
+      },
+      { new: true }
+    ).select("displayName email mobile studentId studentEmail");
+
+    if (!member) {
+      return res.status(404).json({
+        message: "Member not found or not assigned under this lead",
+      });
+    }
+
+    res.json(member);
+  } catch (err) {
+    console.error("Error updating member by lead:", err);
+    return res.status(500).json({ message: "Failed to update member" });
+  }
+});
+
+/* ============================
+ * CONFERENCES (LEAD SIDE)
+ * ==========================*/
 
 // GET /api/lead/conferences
 router.get("/conferences", requireLead, async (req, res) => {

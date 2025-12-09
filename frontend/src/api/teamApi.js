@@ -124,6 +124,30 @@ export function getMyTeam(idToken) {
   return authFetch("/api/lead/team", { method: "GET" }, idToken);
 }
 
+// POST /api/lead/members  (lead creates/attaches member under themselves)
+export function createMyMember(idToken, data) {
+  return authFetch(
+    "/api/lead/members",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
+// PUT /api/lead/members/:memberId  (lead updates their member)
+export function updateMyMember(idToken, memberId, data) {
+  return authFetch(
+    `/api/lead/members/${memberId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
 // GET /api/lead/conferences
 export function getMyConferences(idToken) {
   return authFetch("/api/lead/conferences", { method: "GET" }, idToken);
@@ -153,19 +177,8 @@ export function updateConference(idToken, confId, data) {
   );
 }
 
-// PUT /api/lead/members/:memberId  (lead updates their member)
-export function updateMyMember(idToken, memberId, data) {
-  return authFetch(
-    `/api/lead/members/${memberId}`,
-    {
-      method: "PUT",
-      body: JSON.stringify(data),
-    },
-    idToken
-  );
-}
-
 const teamApi = {
+  // admin
   getAllTeams,
   assignMemberToLead,
   updateMemberInfo,
@@ -174,11 +187,13 @@ const teamApi = {
   createConferenceForLead,
   updateConferenceByAdmin,
   deleteConferenceByAdmin,
+  // lead
   getMyTeam,
+  createMyMember,
+  updateMyMember,
   getMyConferences,
   createConference,
   updateConference,
-  updateMyMember, // 🔹 add this
 };
 
 export default teamApi;

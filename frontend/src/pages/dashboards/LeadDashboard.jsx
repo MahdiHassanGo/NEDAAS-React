@@ -6,7 +6,8 @@ import {
   getMyConferences,
   createConference,
   updateConference,
-  updateMyMember, // 🔹 NEW
+  createMyMember,   // 🔹 NEW
+  updateMyMember,   // 🔹 existing
 } from "../../api/teamApi";
 
 const STATUS_OPTIONS = ["submitted", "accepted", "presented", "published"];
@@ -26,6 +27,18 @@ export default function LeadDashboard() {
   const [memberEditError, setMemberEditError] = useState(null);
   const [memberEditMessage, setMemberEditMessage] = useState(null);
 
+  // NEW MEMBER form state
+  const [memberForm, setMemberForm] = useState({
+    displayName: "",
+    email: "",
+    mobile: "",
+    studentId: "",
+    studentEmail: "",
+  });
+  const [memberSaving, setMemberSaving] = useState(false);
+  const [memberCreateError, setMemberCreateError] = useState(null);
+  const [memberCreateMessage, setMemberCreateMessage] = useState(null);
+
   // CONFERENCES
   const [confs, setConfs] = useState([]);
   const [confsLoading, setConfsLoading] = useState(true);
@@ -39,7 +52,6 @@ export default function LeadDashboard() {
     authorIds: [],
   });
   const [confSaving, setConfSaving] = useState(false);
-  
 
   // Conference edit state (lead can edit title/date/link/authors/status)
   const [editingConfId, setEditingConfId] = useState(null);
@@ -90,6 +102,43 @@ export default function LeadDashboard() {
     loadConfs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser]);
+
+  /* ============================
+   * MEMBER CREATE (NEW UNDER THIS LEAD)
+   * ==========================*/
+
+  const handleMemberFormChange = (e) => {
+    const { name, value } = e.target;
+    setMemberForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateMember = async (e) => {
+    e.preventDefault();
+    if (!firebaseUser) return;
+
+    setMemberCreateError(null);
+    setMemberCreateMessage(null);
+
+    try {
+      setMemberSaving(true);
+      const idToken = await firebaseUser.getIdToken();
+      await createMyMember(idToken, memberForm);
+      setMemberCreateMessage("New member added to your team.");
+      setMemberForm({
+        displayName: "",
+        email: "",
+        mobile: "",
+        studentId: "",
+        studentEmail: "",
+      });
+      await loadTeam();
+    } catch (err) {
+      console.error("Failed to create member:", err);
+      setMemberCreateError(err.message || "Failed to create member");
+    } finally {
+      setMemberSaving(false);
+    }
+  };
 
   /* ============================
    * MEMBER EDIT (LEAD SIDE)
@@ -320,12 +369,24 @@ export default function LeadDashboard() {
               Manage Team
             </h1>
             <p className="text-gray-700 mb-4">
-              View and update the students assigned under your lead role.
+              View, add, and update the students assigned under your lead role.
             </p>
 
             {teamError && (
               <div className="mb-4 px-4 py-2 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
                 {teamError}
+              </div>
+            )}
+
+            {memberCreateError && (
+              <div className="mb-3 px-4 py-2 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+                {memberCreateError}
+              </div>
+            )}
+
+            {memberCreateMessage && (
+              <div className="mb-3 px-4 py-2 rounded-lg text-sm bg-green-50 text-green-700 border border-green-200">
+                {memberCreateMessage}
               </div>
             )}
 
@@ -359,6 +420,95 @@ export default function LeadDashboard() {
                   </div>
                 </div>
 
+                {/* Add New Member Form */}
+                <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 mb-5">
+                  <h2 className="text-lg font-semibold text-deepTeal mb-2">
+                    Add New Member to Your Team
+                  </h2>
+                  <p className="text-xs text-gray-600 mb-3">
+                    You can add a new member under your lead. If a user with
+                    this email already exists, they will be attached to your
+                    team (if not under another lead).
+                  </p>
+
+                  <form
+                    onSubmit={handleCreateMember}
+                    className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs"
+                  >
+                    <div>
+                      <label className="block text-[11px] text-gray-600 mb-0.5">
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        name="displayName"
+                        value={memberForm.displayName}
+                        onChange={handleMemberFormChange}
+                        className="w-full px-2 py-1 rounded border border-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 mb-0.5">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={memberForm.email}
+                        onChange={handleMemberFormChange}
+                        required
+                        className="w-full px-2 py-1 rounded border border-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 mb-0.5">
+                        Mobile
+                      </label>
+                      <input
+                        type="text"
+                        name="mobile"
+                        value={memberForm.mobile}
+                        onChange={handleMemberFormChange}
+                        className="w-full px-2 py-1 rounded border border-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 mb-0.5">
+                        Student ID
+                      </label>
+                      <input
+                        type="text"
+                        name="studentId"
+                        value={memberForm.studentId}
+                        onChange={handleMemberFormChange}
+                        className="w-full px-2 py-1 rounded border border-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 mb-0.5">
+                        Student Email
+                      </label>
+                      <input
+                        type="email"
+                        name="studentEmail"
+                        value={memberForm.studentEmail}
+                        onChange={handleMemberFormChange}
+                        className="w-full px-2 py-1 rounded border border-gray-300"
+                      />
+                    </div>
+                    <div className="flex items-end justify-end">
+                      <button
+                        type="submit"
+                        disabled={memberSaving}
+                        className="px-4 py-1.5 rounded-full bg-midTeal text-white text-[11px] hover:shadow-md disabled:opacity-60"
+                      >
+                        {memberSaving ? "Saving..." : "Add Member"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Members List */}
                 <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold text-deepTeal">
