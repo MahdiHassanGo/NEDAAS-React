@@ -6,10 +6,12 @@ import {
   getMyConferences,
   createConference,
   updateConference,
-  createMyMember,   // 🔹 NEW
-  updateMyMember,   // 🔹 existing
+  createMyMember,
+  updateMyMember,
+  getMyAuthors, // NEW
+  createMyAuthor, // NEW
+  updateMyAuthor, // (not used yet, but imported if needed later)
 } from "../../api/teamApi";
-// src/pages/dashboards/LeadDashboard.jsx
 import { createPublicationAsLead } from "../../api/publicationApi";
 
 const STATUS_OPTIONS = ["submitted", "accepted", "presented", "published"];
@@ -18,11 +20,26 @@ export default function LeadDashboard() {
   const { firebaseUser } = useAuth();
   const [activeSection, setActiveSection] = useState("team");
 
+  // AUTHORS (for this lead, separate collection)
+  const [authors, setAuthors] = useState([]);
+  const [authorsLoading, setAuthorsLoading] = useState(true);
+  const [authorsError, setAuthorsError] = useState(null);
+
+  const [authorForm, setAuthorForm] = useState({
+    name: "",
+    email: "",
+    affiliation: "",
+  });
+  const [authorSaving, setAuthorSaving] = useState(false);
+  const [authorMessage, setAuthorMessage] = useState(null);
+  const [authorError, setAuthorError] = useState(null);
+
   // TEAM
   const [team, setTeam] = useState(null);
   const [teamLoading, setTeamLoading] = useState(true);
   const [teamError, setTeamError] = useState(null);
-    // PUBLICATIONS (LEAD SUBMISSION)
+
+  // PUBLICATIONS (LEAD SUBMISSION)
   const [pubForm, setPubForm] = useState({
     meta: "",
     title: "",
@@ -35,6 +52,115 @@ export default function LeadDashboard() {
   const [pubMessage, setPubMessage] = useState(null);
   const [pubError, setPubError] = useState(null);
   const [pubLoading, setPubLoading] = useState(false);
+
+  // Member edit state (lead can edit their members)
+  const [memberEdits, setMemberEdits] = useState({});
+  const [memberEditSaving, setMemberEditSaving] = useState(false);
+  const [memberEditError, setMemberEditError] = useState(null);
+  const [memberEditMessage, setMemberEditMessage] = useState(null);
+
+  // NEW MEMBER form state
+  const [memberForm, setMemberForm] = useState({
+    displayName: "",
+    email: "",
+    mobile: "",
+    studentId: "",
+    studentEmail: "",
+  });
+  const [memberSaving, setMemberSaving] = useState(false);
+  const [memberCreateError, setMemberCreateError] = useState(null);
+  const [memberCreateMessage, setMemberCreateMessage] = useState(null);
+
+  // CONFERENCES
+  const [confs, setConfs] = useState([]);
+  const [confsLoading, setConfsLoading] = useState(true);
+  const [confsError, setConfsError] = useState(null);
+  const [confMessage, setConfMessage] = useState(null);
+
+  const [confForm, setConfForm] = useState({
+    title: "",
+    date: "",
+    link: "",
+    authorIds: [],
+    extraAuthorIds: [], // NEW
+  });
+  const [confSaving, setConfSaving] = useState(false);
+
+  // Conference edit state (lead can edit title/date/link/authors/status)
+  const [editingConfId, setEditingConfId] = useState(null);
+  const [editingConfForm, setEditingConfForm] = useState({
+    title: "",
+    date: "",
+    link: "",
+    status: "submitted",
+    authorIds: [],
+    extraAuthorIds: [], // NEW
+  });
+  const [confEditSaving, setConfEditSaving] = useState(false);
+
+  /* ============================
+   * LOADERS
+   * ==========================*/
+
+  const loadTeam = async () => {
+    if (!firebaseUser) return;
+    try {
+      setTeamLoading(true);
+      setTeamError(null);
+      const idToken = await firebaseUser.getIdToken();
+      const data = await getMyTeam(idToken);
+      setTeam(data);
+    } catch (err) {
+      console.error("Failed to load team:", err);
+      setTeamError(err.message || "Failed to load team");
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  const loadConfs = async () => {
+    if (!firebaseUser) return;
+    try {
+      setConfsLoading(true);
+      setConfsError(null);
+      const idToken = await firebaseUser.getIdToken();
+      const data = await getMyConferences(idToken);
+      setConfs(data);
+    } catch (err) {
+      console.error("Failed to load conferences:", err);
+      setConfsError(err.message || "Failed to load conferences");
+    } finally {
+      setConfsLoading(false);
+    }
+  };
+
+  const loadAuthors = async () => {
+    if (!firebaseUser) return;
+    try {
+      setAuthorsLoading(true);
+      setAuthorsError(null);
+      const idToken = await firebaseUser.getIdToken();
+      const data = await getMyAuthors(idToken);
+      setAuthors(data);
+    } catch (err) {
+      console.error("Failed to load authors:", err);
+      setAuthorsError(err.message || "Failed to load authors");
+    } finally {
+      setAuthorsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!firebaseUser) return;
+    loadTeam();
+    loadConfs();
+    loadAuthors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firebaseUser]);
+
+  /* ============================
+   * PUBLICATION HANDLERS
+   * ==========================*/
 
   const handleLeadPubChange = (e) => {
     const { name, value } = e.target;
@@ -75,88 +201,40 @@ export default function LeadDashboard() {
     }
   };
 
+  /* ============================
+   * AUTHOR CREATE (NEW UNDER THIS LEAD)
+   * ==========================*/
 
-  // Member edit state (lead can edit their members)
-  const [memberEdits, setMemberEdits] = useState({});
-  const [memberEditSaving, setMemberEditSaving] = useState(false);
-  const [memberEditError, setMemberEditError] = useState(null);
-  const [memberEditMessage, setMemberEditMessage] = useState(null);
-
-  // NEW MEMBER form state
-  const [memberForm, setMemberForm] = useState({
-    displayName: "",
-    email: "",
-    mobile: "",
-    studentId: "",
-    studentEmail: "",
-  });
-  const [memberSaving, setMemberSaving] = useState(false);
-  const [memberCreateError, setMemberCreateError] = useState(null);
-  const [memberCreateMessage, setMemberCreateMessage] = useState(null);
-
-  // CONFERENCES
-  const [confs, setConfs] = useState([]);
-  const [confsLoading, setConfsLoading] = useState(true);
-  const [confsError, setConfsError] = useState(null);
-  const [confMessage, setConfMessage] = useState(null);
-
-  const [confForm, setConfForm] = useState({
-    title: "",
-    date: "",
-    link: "",
-    authorIds: [],
-  });
-  const [confSaving, setConfSaving] = useState(false);
-
-  // Conference edit state (lead can edit title/date/link/authors/status)
-  const [editingConfId, setEditingConfId] = useState(null);
-  const [editingConfForm, setEditingConfForm] = useState({
-    title: "",
-    date: "",
-    link: "",
-    status: "submitted",
-    authorIds: [],
-  });
-  const [confEditSaving, setConfEditSaving] = useState(false);
-
-  const loadTeam = async () => {
-    if (!firebaseUser) return;
-    try {
-      setTeamLoading(true);
-      setTeamError(null);
-      const idToken = await firebaseUser.getIdToken();
-      const data = await getMyTeam(idToken);
-      setTeam(data);
-    } catch (err) {
-      console.error("Failed to load team:", err);
-      setTeamError(err.message || "Failed to load team");
-    } finally {
-      setTeamLoading(false);
-    }
+  const handleAuthorFormChange = (e) => {
+    const { name, value } = e.target;
+    setAuthorForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const loadConfs = async () => {
+  const handleCreateAuthor = async (e) => {
+    e.preventDefault();
     if (!firebaseUser) return;
+
+    setAuthorError(null);
+    setAuthorMessage(null);
+
     try {
-      setConfsLoading(true);
-      setConfsError(null);
+      setAuthorSaving(true);
       const idToken = await firebaseUser.getIdToken();
-      const data = await getMyConferences(idToken);
-      setConfs(data);
+      await createMyAuthor(idToken, authorForm);
+      setAuthorMessage("New author added.");
+      setAuthorForm({
+        name: "",
+        email: "",
+        affiliation: "",
+      });
+      await loadAuthors();
     } catch (err) {
-      console.error("Failed to load conferences:", err);
-      setConfsError(err.message || "Failed to load conferences");
+      console.error("Failed to create author:", err);
+      setAuthorError(err.message || "Failed to create author");
     } finally {
-      setConfsLoading(false);
+      setAuthorSaving(false);
     }
   };
-
-  useEffect(() => {
-    if (!firebaseUser) return;
-    loadTeam();
-    loadConfs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firebaseUser]);
 
   /* ============================
    * MEMBER CREATE (NEW UNDER THIS LEAD)
@@ -265,6 +343,12 @@ export default function LeadDashboard() {
     setConfForm((prev) => ({ ...prev, authorIds: values }));
   };
 
+  const handleExtraAuthorsChange = (e) => {
+    const options = Array.from(e.target.selectedOptions);
+    const values = options.map((o) => o.value);
+    setConfForm((prev) => ({ ...prev, extraAuthorIds: values }));
+  };
+
   const handleConfSubmit = async (e) => {
     e.preventDefault();
     if (!firebaseUser) return;
@@ -282,6 +366,7 @@ export default function LeadDashboard() {
         date: "",
         link: "",
         authorIds: [],
+        extraAuthorIds: [],
       });
       await loadConfs();
     } catch (err) {
@@ -321,6 +406,10 @@ export default function LeadDashboard() {
         conf.authors && conf.authors.length > 0
           ? conf.authors.map((a) => a._id)
           : [],
+      extraAuthorIds:
+        conf.extraAuthors && conf.extraAuthors.length > 0
+          ? conf.extraAuthors.map((a) => a._id)
+          : [],
     });
   };
 
@@ -333,6 +422,12 @@ export default function LeadDashboard() {
     const options = Array.from(e.target.selectedOptions);
     const values = options.map((o) => o.value);
     setEditingConfForm((prev) => ({ ...prev, authorIds: values }));
+  };
+
+  const handleEditConfExtraAuthorsChange = (e) => {
+    const options = Array.from(e.target.selectedOptions);
+    const values = options.map((o) => o.value);
+    setEditingConfForm((prev) => ({ ...prev, extraAuthorIds: values }));
   };
 
   const handleConfEditSubmit = async (e) => {
@@ -351,6 +446,7 @@ export default function LeadDashboard() {
         link: editingConfForm.link,
         status: editingConfForm.status,
         authorIds: editingConfForm.authorIds,
+        extraAuthorIds: editingConfForm.extraAuthorIds,
       });
       setConfMessage("Conference updated successfully.");
       setEditingConfId(null);
@@ -360,6 +456,7 @@ export default function LeadDashboard() {
         link: "",
         status: "submitted",
         authorIds: [],
+        extraAuthorIds: [],
       });
       await loadConfs();
     } catch (err) {
@@ -378,6 +475,7 @@ export default function LeadDashboard() {
       link: "",
       status: "submitted",
       authorIds: [],
+      extraAuthorIds: [],
     });
   };
 
@@ -425,7 +523,8 @@ export default function LeadDashboard() {
               Manage Team
             </h1>
             <p className="text-gray-700 mb-4">
-              View, add, and update the students assigned under your lead role.
+              View, add, and update the students assigned under your lead role,
+              and manage external authors for your conferences.
             </p>
 
             {teamError && (
@@ -562,6 +661,138 @@ export default function LeadDashboard() {
                       </button>
                     </div>
                   </form>
+                </div>
+
+                {/* Add New Author Form */}
+                <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 mb-5">
+                  <h2 className="text-lg font-semibold text-deepTeal mb-2">
+                    Add Author (External / Non-member)
+                  </h2>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Use this for collaborators who are not in your NEDAAS member
+                    list. These authors will be available to attach to
+                    conferences and papers.
+                  </p>
+
+                  {authorError && (
+                    <div className="mb-2 px-3 py-1.5 rounded-lg text-xs bg-red-50 text-red-700 border border-red-200">
+                      {authorError}
+                    </div>
+                  )}
+                  {authorMessage && (
+                    <div className="mb-2 px-3 py-1.5 rounded-lg text-xs bg-green-50 text-green-700 border border-green-200">
+                      {authorMessage}
+                    </div>
+                  )}
+
+                  <form
+                    onSubmit={handleCreateAuthor}
+                    className="grid md:grid-cols-3 gap-3 text-xs"
+                  >
+                    <div>
+                      <label className="block text-[11px] text-gray-600 mb-0.5">
+                        Name *
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={authorForm.name}
+                        onChange={handleAuthorFormChange}
+                        required
+                        className="w-full px-2 py-1 rounded border border-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 mb-0.5">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={authorForm.email}
+                        onChange={handleAuthorFormChange}
+                        className="w-full px-2 py-1 rounded border border-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 mb-0.5">
+                        Affiliation
+                      </label>
+                      <input
+                        type="text"
+                        name="affiliation"
+                        value={authorForm.affiliation}
+                        onChange={handleAuthorFormChange}
+                        className="w-full px-2 py-1 rounded border border-gray-300"
+                      />
+                    </div>
+                    <div className="md:col-span-3 flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={authorSaving}
+                        className="px-4 py-1.5 rounded-full bg-accentTeal text-white text-[11px] hover:shadow-md disabled:opacity-60"
+                      >
+                        {authorSaving ? "Saving..." : "Add Author"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Authors List */}
+                <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 mb-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-deepTeal">
+                      Authors (External)
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={loadAuthors}
+                      className="text-xs px-3 py-1 rounded-full border border-midTeal text-midTeal hover:bg-midTeal hover:text-white transition-colors"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+
+                  {authorsLoading && (
+                    <div className="text-xs text-gray-500">
+                      Loading authors...
+                    </div>
+                  )}
+
+                  {!authorsLoading && authorsError && (
+                    <div className="text-xs text-red-600">{authorsError}</div>
+                  )}
+
+                  {!authorsLoading &&
+                    !authorsError &&
+                    authors.length === 0 && (
+                      <div className="text-xs text-gray-500">
+                        No external authors added yet.
+                      </div>
+                    )}
+
+                  {!authorsLoading &&
+                    !authorsError &&
+                    authors.length > 0 && (
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                        {authors.map((a) => (
+                          <div
+                            key={a._id}
+                            className="border border-gray-100 rounded-xl px-3 py-2 bg-slate-50"
+                          >
+                            <div className="font-semibold text-deepTeal">
+                              {a.name}
+                            </div>
+                            <div className="text-[11px] text-gray-600">
+                              {a.email || "No email"}
+                            </div>
+                            <div className="text-[11px] text-gray-600">
+                              {a.affiliation || "No affiliation"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
 
                 {/* Members List */}
@@ -730,8 +961,8 @@ export default function LeadDashboard() {
               Manage Conference
             </h1>
             <p className="text-gray-700 mb-4">
-              Create and track conference submissions for your team. Authors
-              can only be selected from your assigned members.
+              Create and track conference submissions for your team. Authors can
+              be selected from your team members and your external author list.
             </p>
 
             {confMessage && (
@@ -756,7 +987,8 @@ export default function LeadDashboard() {
                 </h2>
                 <p className="text-xs text-gray-600 mb-2">
                   Fill in the conference details and choose authors from your
-                  team (multiple selection supported).
+                  team and from your external author list (multiple selection
+                  supported).
                 </p>
 
                 <div>
@@ -821,6 +1053,29 @@ export default function LeadDashboard() {
                   </select>
                   <p className="text-[11px] text-gray-500 mt-1">
                     Hold Ctrl/Command to select multiple authors.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    External Authors (from your author list)
+                  </label>
+                  <select
+                    multiple
+                    value={confForm.extraAuthorIds}
+                    onChange={handleExtraAuthorsChange}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50 h-28"
+                  >
+                    {authors &&
+                      authors.map((a) => (
+                        <option key={a._id} value={a._id}>
+                          {a.name}
+                          {a.affiliation ? ` – ${a.affiliation}` : ""}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    Hold Ctrl/Command to select multiple external authors.
                   </p>
                 </div>
 
@@ -947,6 +1202,27 @@ export default function LeadDashboard() {
                                   ))}
                               </select>
                             </div>
+                            <div>
+                              <label className="block text-[11px] text-gray-600 mb-0.5">
+                                External Authors
+                              </label>
+                              <select
+                                multiple
+                                value={editingConfForm.extraAuthorIds}
+                                onChange={handleEditConfExtraAuthorsChange}
+                                className="w-full px-2 py-1 rounded border border-gray-300 text-xs h-20"
+                              >
+                                {authors &&
+                                  authors.map((a) => (
+                                    <option key={a._id} value={a._id}>
+                                      {a.name}
+                                      {a.affiliation
+                                        ? ` – ${a.affiliation}`
+                                        : ""}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
                             <div className="flex gap-2 justify-end mt-1">
                               <button
                                 type="submit"
@@ -989,17 +1265,31 @@ export default function LeadDashboard() {
                               Authors:
                             </span>
                             <div className="text-[11px] text-gray-600">
-                              {conf.authors && conf.authors.length > 0
-                                ? conf.authors
-                                    .map(
-                                      (a) =>
-                                        a.displayName ||
-                                        a.name ||
-                                        a.email ||
-                                        "Unnamed"
-                                    )
-                                    .join(", ")
-                                : "Not set"}
+                              {(() => {
+                                const memberNames =
+                                  conf.authors && conf.authors.length > 0
+                                    ? conf.authors.map(
+                                        (a) =>
+                                          a.displayName ||
+                                          a.email ||
+                                          "Unnamed"
+                                      )
+                                    : [];
+                                const externalNames =
+                                  conf.extraAuthors &&
+                                  conf.extraAuthors.length > 0
+                                    ? conf.extraAuthors.map(
+                                        (a) =>
+                                          a.name ||
+                                          a.email ||
+                                          "Unnamed External"
+                                      )
+                                    : [];
+                                const all = [...memberNames, ...externalNames];
+                                return all.length > 0
+                                  ? all.join(", ")
+                                  : "Not set";
+                              })()}
                             </div>
                           </div>
 
@@ -1070,7 +1360,8 @@ export default function LeadDashboard() {
             </div>
           </section>
         )}
-                {/* ADD PUBLICATION (LEAD) */}
+
+        {/* ADD PUBLICATION (LEAD) */}
         {activeSection === "addPublication" && (
           <section>
             <h1 className="text-3xl font-bold text-deepTeal mb-4">
@@ -1210,7 +1501,6 @@ export default function LeadDashboard() {
             </form>
           </section>
         )}
-
       </div>
     </div>
   );

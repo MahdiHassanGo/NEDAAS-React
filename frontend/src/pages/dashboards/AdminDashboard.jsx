@@ -10,6 +10,7 @@ import {
   getAllPublications,
   updatePublicationStatus,
   updatePublication,
+  updateUser, // ✅ used for modal save
 } from "../../api/adminApi";
 
 import {
@@ -39,6 +40,19 @@ export default function AdminDashboard() {
   const [manualEmail, setManualEmail] = useState("");
   const [manualName, setManualName] = useState("");
   const [manualRole, setManualRole] = useState("member");
+
+  // ✨ Edit user modal state
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editingUserForm, setEditingUserForm] = useState({
+    displayName: "",
+    email: "",
+    mobile: "",
+    studentId: "",
+    studentEmail: "",
+    role: "member",
+  });
+  const [userEditLoading, setUserEditLoading] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
   // --------- PUBLICATIONS (ADD) ----------
   const [pubForm, setPubForm] = useState({
@@ -191,9 +205,6 @@ export default function AdminDashboard() {
     if (activeSection === "addUser") {
       refreshUsers();
     }
-    if (activeSection === "addPublication") {
-      // no list needed
-    }
     if (activeSection === "reviewPublication") {
       refreshPublications();
     }
@@ -239,6 +250,70 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Failed to add user:", err);
       setUserActionMessage("Failed to add user: " + err.message);
+    }
+  };
+
+  // ✨ EDIT USER MODAL HELPERS
+
+  const startEditUser = (u) => {
+    setEditingUserId(u._id);
+    setEditingUserForm({
+      displayName: u.displayName || "",
+      email: u.email || "",
+      mobile: u.mobile || "",
+      studentId: u.studentId || "",
+      studentEmail: u.studentEmail || "",
+      role: u.role || "member",
+    });
+    setUserActionMessage(null);
+    setIsUserModalOpen(true);
+  };
+
+  const cancelEditUser = () => {
+    setEditingUserId(null);
+    setIsUserModalOpen(false);
+    setEditingUserForm({
+      displayName: "",
+      email: "",
+      mobile: "",
+      studentId: "",
+      studentEmail: "",
+      role: "member",
+    });
+  };
+
+  const handleEditUserChange = (field, value) => {
+    setEditingUserForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSaveUserEdit = async (u) => {
+    try {
+      setUserEditLoading(true);
+      setUserActionMessage(null);
+
+      const idToken = await firebaseUser.getIdToken();
+
+      await updateUser(idToken, u._id, {
+        displayName: editingUserForm.displayName,
+        email: editingUserForm.email,
+        mobile: editingUserForm.mobile,
+        studentId: editingUserForm.studentId,
+        studentEmail: editingUserForm.studentEmail,
+        role: editingUserForm.role,
+      });
+
+      setUserActionMessage("User updated successfully.");
+      setEditingUserId(null);
+      setIsUserModalOpen(false);
+      await refreshUsers();
+    } catch (err) {
+      console.error("Failed to update user:", err);
+      setUserActionMessage("Failed to update user: " + err.message);
+    } finally {
+      setUserEditLoading(false);
     }
   };
 
@@ -670,10 +745,13 @@ export default function AdminDashboard() {
                             Email
                           </th>
                           <th className="py-2 pr-4 font-semibold text-gray-700">
+                            Name
+                          </th>
+                          <th className="py-2 pr-4 font-semibold text-gray-700">
                             Current Role
                           </th>
                           <th className="py-2 font-semibold text-gray-700">
-                            Change Role
+                            Actions
                           </th>
                         </tr>
                       </thead>
@@ -689,6 +767,9 @@ export default function AdminDashboard() {
                               <td className="py-2 pr-4 text-xs md:text-sm">
                                 {u.email}
                               </td>
+                              <td className="py-2 pr-4 text-xs md:text-sm">
+                                {u.displayName || "—"}
+                              </td>
                               <td className="py-2 pr-4 text-xs md:text-sm capitalize">
                                 {isRootAdmin ? (
                                   <span className="inline-flex items-center gap-1">
@@ -703,6 +784,7 @@ export default function AdminDashboard() {
                               </td>
                               <td className="py-2">
                                 <div className="flex flex-wrap gap-1">
+                                  {/* quick role change buttons */}
                                   {ROLES.map((r) => {
                                     const isCurrent = u.role === r;
                                     const disabled =
@@ -728,6 +810,15 @@ export default function AdminDashboard() {
                                       </button>
                                     );
                                   })}
+
+                                  {/* Edit → open modal */}
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditUser(u)}
+                                    className="px-2 py-1 rounded-full text-xs border border-slate-400 text-slate-700 hover:bg-slate-100"
+                                  >
+                                    Edit
+                                  </button>
                                 </div>
                               </td>
                             </tr>
@@ -736,7 +827,7 @@ export default function AdminDashboard() {
                         {users.length === 0 && (
                           <tr>
                             <td
-                              colSpan={3}
+                              colSpan={4}
                               className="py-4 text-gray-500 text-sm"
                             >
                               No users found yet.
@@ -1105,7 +1196,9 @@ export default function AdminDashboard() {
               {/* Edit Publication Panel */}
               <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
                 <h2 className="text-xl font-semibold text-deepTeal mb-3">
-                  {editingPub ? "Edit Publication" : "Select a publication to edit"}
+                  {editingPub
+                    ? "Edit Publication"
+                    : "Select a publication to edit"}
                 </h2>
 
                 {!editingPub && (
@@ -1257,7 +1350,11 @@ export default function AdminDashboard() {
             </p>
 
             {/* Feedback messages for member & conference actions */}
-            {(memberMessage || memberError || newConfMessage || newConfError || confEditError) && (
+            {(memberMessage ||
+              memberError ||
+              newConfMessage ||
+              newConfError ||
+              confEditError) && (
               <div className="mb-4 space-y-2">
                 {memberMessage && (
                   <div className="px-4 py-2 rounded-lg text-sm bg-green-50 text-green-700 border border-green-200">
@@ -1889,6 +1986,148 @@ export default function AdminDashboard() {
           </section>
         )}
       </div>
+
+      {/* ✨ EDIT USER MODAL */}
+      {isUserModalOpen && editingUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+            <h2 className="text-xl font-semibold text-deepTeal mb-4">
+              Edit User Information
+            </h2>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const u = users.find((x) => x._id === editingUserId);
+                if (u) {
+                  handleSaveUserEdit(u);
+                }
+              }}
+              className="space-y-3 text-sm"
+            >
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editingUserForm.email}
+                  onChange={(e) =>
+                    handleEditUserChange("email", e.target.value)
+                  }
+                  disabled={
+                    users.find((u) => u._id === editingUserId)?.email ===
+                    ROOT_ADMIN_EMAIL
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                />
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={editingUserForm.displayName}
+                  onChange={(e) =>
+                    handleEditUserChange("displayName", e.target.value)
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                />
+              </div>
+
+              {/* Mobile */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Mobile
+                </label>
+                <input
+                  type="text"
+                  value={editingUserForm.mobile}
+                  onChange={(e) =>
+                    handleEditUserChange("mobile", e.target.value)
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                />
+              </div>
+
+              {/* Student ID */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Student ID
+                </label>
+                <input
+                  type="text"
+                  value={editingUserForm.studentId}
+                  onChange={(e) =>
+                    handleEditUserChange("studentId", e.target.value)
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                />
+              </div>
+
+              {/* Student Email */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Student Email
+                </label>
+                <input
+                  type="email"
+                  value={editingUserForm.studentEmail}
+                  onChange={(e) =>
+                    handleEditUserChange("studentEmail", e.target.value)
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                />
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  value={editingUserForm.role}
+                  onChange={(e) =>
+                    handleEditUserChange("role", e.target.value)
+                  }
+                  disabled={
+                    users.find((u) => u._id === editingUserId)?.email ===
+                    ROOT_ADMIN_EMAIL
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                >
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={cancelEditUser}
+                  className="px-4 py-2 rounded-full border border-gray-300 text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={userEditLoading}
+                  className="px-4 py-2 rounded-full bg-gradient-to-r from-midTeal to-accentTeal text-white text-xs font-medium hover:shadow-lg transition-shadow disabled:opacity-60"
+                >
+                  {userEditLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

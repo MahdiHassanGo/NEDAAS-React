@@ -9,9 +9,12 @@ body,
 }
 
 body {
-  @apply bg-gradient-to-br from-[#e8faff] to-[#f9feff] text-[#12313e];
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  @apply bg-[#f5fcff] text-[#0b3c4a];
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   scroll-behavior: smooth;
+}
+
+h1, h2, h3, h4, h5, h6, .font-outfit {
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
 }
 

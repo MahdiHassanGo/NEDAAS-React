@@ -1,7 +1,7 @@
-// src/api/authApi.js
-const API_BASE_URL = "http://localhost:5000"; // change this in prod
+const API_BASE_URL =
+  "https://nedaas-backend.vercel.app" ||"nedaas-backend-bm9q20bks-mahdi-hassan-noor-asifs-projects.vercel.app "|| "http://localhost:5000";
 
-// Login with Firebase token
+
 export async function loginWithFirebaseToken(idToken) {
   const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: "POST",
@@ -18,10 +18,9 @@ export async function loginWithFirebaseToken(idToken) {
     throw new Error(data.message || "Login request failed");
   }
 
-  return data; // { message, role, user }
+  return data;
 }
 
-// Get current logged in user info from backend (/api/auth/me)
 export async function getCurrentUser(idToken) {
   const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
     method: "GET",
@@ -38,5 +37,5 @@ export async function getCurrentUser(idToken) {
     throw new Error(data.message || "Failed to fetch current user");
   }
 
-  return data; // full user object
+  return data;
 }

@@ -1,5 +1,6 @@
-// src/api/adminApi.js
-const API_BASE = "http://localhost:5000";
+// ...existing code...
+// const API_BASE_URL = "http://localhost:5000"; // old
+const API_BASE = "https://nedaas-backend.vercel.app" ||"nedaas-backend-bm9q20bks-mahdi-hassan-noor-asifs-projects.vercel.app";
 
 // Helper to call backend with Firebase ID token
 async function authFetch(path, options = {}, idToken) {
@@ -56,6 +57,19 @@ export function createManualUser(idToken, userData) {
     idToken
   );
 }
+
+// ✅ NEW: update name + role of a user
+export function updateUser(idToken, userId, data) {
+  return authFetch(
+    `/api/admin/users/${userId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data), // { displayName?, role? }
+    },
+    idToken
+  );
+}
+
 
 // ---------- PUBLICATIONS (Admin add / review) ----------
 export function createPublication(idToken, pubData) {

@@ -1,8 +1,13 @@
-// backend/middleware/authMiddleware.js
 import admin from "../firebaseAdmin.js";
 import User from "../models/User.js";
 
-export async function verifyFirebaseToken(req, res, next) {
+const ROOT_ADMIN_EMAIL = (
+  process.env.ROOT_ADMIN_EMAIL || "mahdiasif78@gmail.com"
+)
+  .trim()
+  .toLowerCase();
+
+async function verifyFirebaseToken(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -12,56 +17,96 @@ export async function verifyFirebaseToken(req, res, next) {
   const token = authHeader.split(" ")[1];
 
   try {
-    // 1) Verify Firebase token
     const decoded = await admin.auth().verifyIdToken(token);
     const { uid, email, name } = decoded;
 
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      return res.status(401).json({ message: "Invalid token payload" });
+    }
+
     let user = null;
 
-    // 2) Try to find by uid first
     if (uid) {
       user = await User.findOne({ uid });
     }
 
-    // 3) If not found, try to find by email (manual users, etc.)
-    if (!user && email) {
-      user = await User.findOne({ email });
-
-      // If found by email but no uid yet, link them now
-      if (user && uid && !user.uid) {
-        user.uid = uid;
-        await user.save();
-        console.log(`🔗 Linked Firebase UID for user ${email}`);
-      }
+    if (!user) {
+      user = await User.findOne({ email: normalizedEmail });
     }
 
-    // 4) If still not found, you can either:
-    //    a) auto-create a default "member" user (below), OR
-    //    b) return 401. I recommend auto-create to make life easier.
+    // Reject unknown users
     if (!user) {
-      console.log(
-        `⚠️ No user found for uid=${uid} email=${email}, creating default user`
-      );
-      user = await User.create({
-        uid,
-        email,
-        displayName: name || email || "Unnamed User",
-        role: "member",
+      return res.status(403).json({
+        message:
+          "Your email is not authorized yet. Please contact admin to add you first.",
       });
     }
 
-    // 5) Attach full Mongoose doc to req.user (as before)
+    let changed = false;
+
+    if (!user.uid && uid) {
+      user.uid = uid;
+      changed = true;
+    }
+
+    if (name && user.displayName !== name) {
+      user.displayName = name;
+      changed = true;
+    }
+
+    if (normalizedEmail === ROOT_ADMIN_EMAIL && user.role !== "admin") {
+      user.role = "admin";
+      changed = true;
+    }
+
+    if (changed) {
+      await user.save();
+    }
+
     req.user = user;
     next();
   } catch (err) {
-    console.error("Token verification error:", err);
+    console.error("Token verification error:", err.message);
     return res.status(401).json({ message: "Invalid token" });
   }
 }
 
-export function requireAdmin(req, res, next) {
+function requireAdmin(req, res, next) {
   if (!req.user || req.user.role !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
   }
   next();
 }
+
+function requireLead(req, res, next) {
+  if (!req.user || !["lead", "admin"].includes(req.user.role)) {
+    return res.status(403).json({ message: "Lead access required" });
+  }
+  next();
+}
+
+function requireDirector(req, res, next) {
+  if (!req.user || !["director", "admin"].includes(req.user.role)) {
+    return res.status(403).json({ message: "Director access required" });
+  }
+  next();
+}
+
+function requireAdminOrDirector(req, res, next) {
+  if (!req.user || !["admin", "director"].includes(req.user.role)) {
+    return res
+      .status(403)
+      .json({ message: "Admin or director access required" });
+  }
+  next();
+}
+
+export {
+  verifyFirebaseToken,
+  requireAdmin,
+  requireLead,
+  requireDirector,
+  requireAdminOrDirector,
+};

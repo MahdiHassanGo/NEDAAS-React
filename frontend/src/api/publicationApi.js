@@ -1,5 +1,5 @@
 // src/api/publicationApi.js
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://nedaas-backend.vercel.app"|| "nedaas-backend-bm9q20bks-mahdi-hassan-noor-asifs-projects.vercel.app";
 
 async function authFetch(path, options = {}, idToken) {
   const res = await fetch(`${API_BASE}${path}`, {

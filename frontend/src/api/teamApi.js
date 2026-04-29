@@ -1,5 +1,5 @@
 // src/api/teamApi.js
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://nedaas-backend.vercel.app" ||"nedaas-backend-bm9q20bks-mahdi-hassan-noor-asifs-projects.vercel.app";
 
 // Small helper for authenticated fetch
 async function authFetch(path, options = {}, idToken) {
@@ -134,7 +134,35 @@ export function createMyMember(idToken, data) {
     },
     idToken
   );
+}// GET /api/lead/authors
+export function getMyAuthors(idToken) {
+  return authFetch("/api/lead/authors", { method: "GET" }, idToken);
 }
+
+// POST /api/lead/authors
+export function createMyAuthor(idToken, data) {
+  return authFetch(
+    "/api/lead/authors",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
+// PUT /api/lead/authors/:authorId
+export function updateMyAuthor(idToken, authorId, data) {
+  return authFetch(
+    `/api/lead/authors/${authorId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
 
 // PUT /api/lead/members/:memberId  (lead updates their member)
 export function updateMyMember(idToken, memberId, data) {
@@ -177,6 +205,7 @@ export function updateConference(idToken, confId, data) {
   );
 }
 
+
 const teamApi = {
   // admin
   getAllTeams,
@@ -194,6 +223,9 @@ const teamApi = {
   getMyConferences,
   createConference,
   updateConference,
+  getMyAuthors,
+  createMyAuthor,
+  updateMyAuthor,
 };
 
 export default teamApi;
