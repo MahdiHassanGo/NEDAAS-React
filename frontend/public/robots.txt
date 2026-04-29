@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Sitemap: https://www.nedaas.org/sitemap.xml
+Host: www.nedaas.org
