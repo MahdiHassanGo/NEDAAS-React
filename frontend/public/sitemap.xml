@@ -1,18 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-
-  <!-- Homepage -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.nedaas.org/</loc>
-    <lastmod>2026-04-29</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-    <image:image>
-      <image:loc>https://www.nedaas.org/Images/NEDAAS%204.1.0.jpg</image:loc>
-      <image:title>NEDAAS Lab - Neural Engineering, Data Analytics and Applied Science</image:title>
-      <image:caption>NEDAAS Lab founded by Md. Mortuza Ahmmed</image:caption>
-    </image:image>
   </url>
-
 </urlset>
