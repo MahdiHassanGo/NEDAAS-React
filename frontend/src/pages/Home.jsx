@@ -339,7 +339,7 @@ const teamMembers = {
     {
       name: "Arizit Chaki Artha",
       role: "Public Relations",
-      image: "/Images/chaki.png",
+      image: "/Images/chaki.jpeg",
     },
   ],
   it: [
