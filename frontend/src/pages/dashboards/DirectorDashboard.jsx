@@ -7,6 +7,7 @@ import directorApi, {
   updateDirectorCalendarEvent,
   deleteDirectorCalendarEvent,
 } from "../../api/directorApi";
+import teamApi, { getAllAuthors } from "../../api/teamApi";
 
 const CALENDAR_STATUS_OPTIONS = [
   { value: "submitted", label: "Submitted" },
@@ -67,6 +68,11 @@ export default function DirectorDashboard() {
   const [confsLoading, setConfsLoading] = useState(true);
   const [confsError, setConfsError] = useState(null);
 
+  /* ========= AUTHORS OVERVIEW ========= */
+  const [authors, setAuthors] = useState([]);
+  const [authorsLoading, setAuthorsLoading] = useState(true);
+  const [authorsError, setAuthorsError] = useState(null);
+
   /* ========= CALENDAR ========= */
   const [events, setEvents] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(true);
@@ -93,19 +99,19 @@ export default function DirectorDashboard() {
 
   /* ========= LOADERS ========= */
 
-  const loadConferences = async () => {
+  const loadAuthors = async () => {
     if (!firebaseUser) return;
     try {
-      setConfsLoading(true);
-      setConfsError(null);
+      setAuthorsLoading(true);
+      setAuthorsError(null);
       const idToken = await firebaseUser.getIdToken();
-      const data = await getDirectorConferences(idToken);
-      setConfs(data);
+      const data = await getAllAuthors(idToken);
+      setAuthors(data);
     } catch (err) {
-      console.error("Failed to load director conferences:", err);
-      setConfsError(err.message || "Failed to load conferences");
+      console.error("Failed to load authors:", err);
+      setAuthorsError(err.message || "Failed to load authors");
     } finally {
-      setConfsLoading(false);
+      setAuthorsLoading(false);
     }
   };
 
@@ -128,6 +134,7 @@ export default function DirectorDashboard() {
   useEffect(() => {
     if (!firebaseUser) return;
     loadConferences();
+    loadAuthors();
     loadCalendar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser]);
@@ -266,6 +273,7 @@ export default function DirectorDashboard() {
 
           {[
             { id: "overview", label: "Conference Overview" },
+            { id: "authors", label: "Authors Overview" },
             { id: "calendar", label: "Conference Calendar" },
           ].map((item) => (
             <button
@@ -414,7 +422,86 @@ export default function DirectorDashboard() {
           </section>
         )}
 
-        {/* ========== SECTION 2: Conference Calendar (CRUD + Filter) ========== */}
+        {/* ========== SECTION 2: Authors Overview (READ ONLY) ========== */}
+        {activeSection === "authors" && (
+          <section>
+            <h1 className="text-3xl font-bold text-deepTeal mb-2">
+              Authors Overview
+            </h1>
+            <p className="text-gray-700 mb-4 text-sm">
+              View all authors created by leads. Director can{" "}
+              <span className="font-semibold">see</span> all author details but
+              cannot edit them here.
+            </p>
+
+            {authorsError && (
+              <div className="mb-3 px-4 py-2 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+                {authorsError}
+              </div>
+            )}
+
+            {authorsLoading && (
+              <div className="text-gray-500 text-sm">Loading authors…</div>
+            )}
+
+            {!authorsLoading && authors.length === 0 && (
+              <div className="text-gray-500 text-sm">
+                No authors found yet.
+              </div>
+            )}
+
+            {!authorsLoading && authors.length > 0 && (
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {authors.map((author) => (
+                  <div
+                    key={author._id}
+                    className="border border-gray-200 rounded-2xl bg-white shadow-sm px-4 py-3 text-xs flex flex-col gap-2"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="font-semibold text-deepTeal text-sm">
+                          {author.name}
+                        </div>
+                        <div className="text-[11px] text-gray-600">
+                          {author.email}
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide bg-gray-100 text-gray-700 border border-gray-200">
+                        Author
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="text-[11px] font-semibold text-gray-700">
+                        Affiliation
+                      </div>
+                      <div className="text-[11px] text-gray-600">
+                        {author.affiliation || "Not specified"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[11px] font-semibold text-gray-700">
+                        Lead
+                      </div>
+                      <div className="text-[11px] text-gray-600">
+                        {author.lead?.displayName || author.lead?.email || "—"}
+                      </div>
+                    </div>
+
+                    {/* Director cannot edit – we show a small note */}
+                    <div className="mt-1 text-[10px] text-gray-400 italic">
+                      Read-only view (changes must be done by respective lead
+                      or admin).
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ========== SECTION 3: Conference Calendar (CRUD + Filter) ========== */}
         {activeSection === "calendar" && (
           <section>
             <h1 className="text-3xl font-bold text-deepTeal mb-2">

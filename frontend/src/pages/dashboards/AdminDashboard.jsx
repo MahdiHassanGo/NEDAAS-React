@@ -22,6 +22,10 @@ import {
   createConferenceForLead,
   updateConferenceByAdmin,
   deleteConferenceByAdmin,
+  getAllAuthors,
+  createAuthorByAdmin,
+  updateAuthorByAdmin,
+  deleteAuthorByAdmin,
 } from "../../api/teamApi";
 
 const ROLES = ["member", "lead", "advisor", "director", "admin"];
@@ -132,6 +136,31 @@ export default function AdminDashboard() {
   const [confEdits, setConfEdits] = useState({});
   const [confEditSaving, setConfEditSaving] = useState(false);
   const [confEditError, setConfEditError] = useState(null);
+
+  // --------- AUTHOR MANAGEMENT ----------
+  const [allAuthors, setAllAuthors] = useState([]);
+  const [allAuthorsLoading, setAllAuthorsLoading] = useState(true);
+  const [allAuthorsError, setAllAuthorsError] = useState(null);
+
+  // Author create/edit forms
+  const [authorForm, setAuthorForm] = useState({
+    name: "",
+    email: "",
+    affiliation: "",
+    leadId: "",
+  });
+  const [authorSaving, setAuthorSaving] = useState(false);
+  const [authorMessage, setAuthorMessage] = useState(null);
+  const [authorError, setAuthorError] = useState(null);
+
+  // Author edit state
+  const [editingAuthorId, setEditingAuthorId] = useState(null);
+  const [editingAuthorForm, setEditingAuthorForm] = useState({
+    name: "",
+    email: "",
+    affiliation: "",
+    leadId: "",
+  });
 
   // ---------- LOADERS ----------
 

@@ -115,6 +115,46 @@ export function deleteConferenceByAdmin(idToken, confId) {
   );
 }
 
+// GET /api/admin/authors
+export function getAllAuthors(idToken) {
+  return authFetch("/api/admin/authors", { method: "GET" }, idToken);
+}
+
+// POST /api/admin/authors
+export function createAuthorByAdmin(idToken, data) {
+  return authFetch(
+    "/api/admin/authors",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
+// PUT /api/admin/authors/:id
+export function updateAuthorByAdmin(idToken, authorId, data) {
+  return authFetch(
+    `/api/admin/authors/${authorId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+    idToken
+  );
+}
+
+// DELETE /api/admin/authors/:id
+export function deleteAuthorByAdmin(idToken, authorId) {
+  return authFetch(
+    `/api/admin/authors/${authorId}`,
+    {
+      method: "DELETE",
+    },
+    idToken
+  );
+}
+
 /* =========================================================
  * LEAD – TEAM & CONFERENCES
  * =======================================================*/
@@ -205,6 +245,19 @@ export function updateConference(idToken, confId, data) {
   );
 }
 
+// POST /api/lead/conferences/:confId/publish-paper
+// Submit a conference paper to the publication database
+export function publishConferencePaper(idToken, confId, paperData) {
+  return authFetch(
+    `/api/lead/conferences/${confId}/publish-paper`,
+    {
+      method: "POST",
+      body: JSON.stringify(paperData),
+    },
+    idToken
+  );
+}
+
 
 const teamApi = {
   // admin
@@ -216,6 +269,10 @@ const teamApi = {
   createConferenceForLead,
   updateConferenceByAdmin,
   deleteConferenceByAdmin,
+  getAllAuthors,
+  createAuthorByAdmin,
+  updateAuthorByAdmin,
+  deleteAuthorByAdmin,
   // lead
   getMyTeam,
   createMyMember,
@@ -223,6 +280,7 @@ const teamApi = {
   getMyConferences,
   createConference,
   updateConference,
+  publishConferencePaper,
   getMyAuthors,
   createMyAuthor,
   updateMyAuthor,

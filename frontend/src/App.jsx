@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Publications from "./pages/Publications";
 import Loader from "./components/Loader";
 
 const DirectorDashboard = lazy(() => import("./pages/dashboards/DirectorDashboard"));
@@ -53,6 +54,15 @@ function App() {
           element={
             <Layout>
               <Login />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/publications"
+          element={
+            <Layout fullWidth>
+              <Publications />
             </Layout>
           }
         />

@@ -6,6 +6,7 @@ import {
   getMyConferences,
   createConference,
   updateConference,
+  publishConferencePaper,
   createMyMember,
   updateMyMember,
   getMyAuthors, // NEW
@@ -78,6 +79,7 @@ export default function LeadDashboard() {
   const [confMessage, setConfMessage] = useState(null);
 
   const [confForm, setConfForm] = useState({
+    name: "",
     title: "",
     date: "",
     link: "",
@@ -97,6 +99,22 @@ export default function LeadDashboard() {
     extraAuthorIds: [], // NEW
   });
   const [confEditSaving, setConfEditSaving] = useState(false);
+
+  // PAPER SUBMISSION (from conference)
+  const [publishingConfId, setPublishingConfId] = useState(null);
+  const [paperForm, setPaperForm] = useState({
+    title: "",
+    authors: "",
+    description: "",
+    doi: "",
+    meta: "Conference Paper",
+    tag: "",
+    link: "",
+    linkLabel: "View article",
+  });
+  const [paperSaving, setpaperSaving] = useState(false);
+  const [paperMessage, setPaperMessage] = useState(null);
+  const [paperError, setPaperError] = useState(null);
 
   /* ============================
    * LOADERS
@@ -477,6 +495,76 @@ export default function LeadDashboard() {
       authorIds: [],
       extraAuthorIds: [],
     });
+  };
+
+  /* ============================
+   * PAPER SUBMISSION HANDLERS
+   * ==========================*/
+
+  const handlePaperChange = (e) => {
+    const { name, value } = e.target;
+    setPaperForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePublishPaperSubmit = async (e) => {
+    e.preventDefault();
+    if (!firebaseUser || !publishingConfId) return;
+
+    setPaperMessage(null);
+    setPaperError(null);
+
+    try {
+      setpaperSaving(true);
+      const idToken = await firebaseUser.getIdToken();
+
+      // Submit paper to publication database
+      const result = await publishConferencePaper(
+        idToken,
+        publishingConfId,
+        paperForm
+      );
+
+      setPaperMessage(
+        "Paper submitted successfully! It is now pending admin approval."
+      );
+      
+      // Reset form and refresh conferences
+      setPaperForm({
+        title: "",
+        authors: "",
+        description: "",
+        doi: "",
+        meta: "Conference Paper",
+        tag: "",
+        link: "",
+        linkLabel: "View article",
+      });
+      setPublishingConfId(null);
+      
+      // Reload conferences to reflect changes
+      await loadConfs();
+    } catch (err) {
+      console.error("Failed to submit paper:", err);
+      setPaperError(err.message || "Failed to submit paper");
+    } finally {
+      setpaperSaving(false);
+    }
+  };
+
+  const cancelPaperSubmit = () => {
+    setPublishingConfId(null);
+    setPaperForm({
+      title: "",
+      authors: "",
+      description: "",
+      doi: "",
+      meta: "Conference Paper",
+      tag: "",
+      link: "",
+      linkLabel: "View article",
+    });
+    setPaperMessage(null);
+    setPaperError(null);
   };
 
   return (
@@ -993,6 +1081,21 @@ export default function LeadDashboard() {
 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Conference Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={confForm.name}
+                    onChange={handleConfChange}
+                    placeholder="e.g., IEEE Conference 2025"
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     Title
                   </label>
                   <input
@@ -1342,7 +1445,21 @@ export default function LeadDashboard() {
                             ))}
                           </div>
 
-                          <div className="flex justify-end mt-1">
+                          <div className="flex gap-2 justify-end mt-1">
+                            {conf.status === "published" && !conf.paper && (
+                              <button
+                                type="button"
+                                onClick={() => setPublishingConfId(conf._id)}
+                                className="px-3 py-1 rounded-full bg-green-50 border border-green-200 text-green-700 text-[11px] hover:bg-green-100"
+                              >
+                                Submit as Publication
+                              </button>
+                            )}
+                            {conf.status === "published" && conf.paper && (
+                              <span className="px-3 py-1 rounded-full bg-green-50 text-green-700 text-[11px] border border-green-200">
+                                Published ✓
+                              </span>
+                            )}
                             <button
                               type="button"
                               onClick={() => startEditConference(conf)}
@@ -1359,6 +1476,163 @@ export default function LeadDashboard() {
               </div>
             </div>
           </section>
+        )}
+
+        {/* PUBLISH PAPER FROM CONFERENCE MODAL */}
+        {publishingConfId && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-deepTeal">
+                  Submit Conference Paper as Publication
+                </h2>
+                <button
+                  onClick={cancelPaperSubmit}
+                  className="text-2xl text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handlePublishPaperSubmit} className="p-6 space-y-4">
+                {paperMessage && (
+                  <div className="px-4 py-2 rounded-lg text-sm bg-green-50 text-green-700 border border-green-200">
+                    {paperMessage}
+                  </div>
+                )}
+                {paperError && (
+                  <div className="px-4 py-2 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+                    {paperError}
+                  </div>
+                )}
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Paper Title *
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={paperForm.title}
+                      onChange={handlePaperChange}
+                      placeholder="Enter paper title"
+                      required
+                      className="w-full px-3 py-2 rounded border border-gray-300 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Authors *
+                    </label>
+                    <input
+                      type="text"
+                      name="authors"
+                      value={paperForm.authors}
+                      onChange={handlePaperChange}
+                      placeholder="e.g., John Doe, Jane Smith"
+                      required
+                      className="w-full px-3 py-2 rounded border border-gray-300 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={paperForm.description}
+                    onChange={handlePaperChange}
+                    placeholder="Brief description of the paper"
+                    required
+                    rows="4"
+                    className="w-full px-3 py-2 rounded border border-gray-300 text-xs"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      DOI Link
+                    </label>
+                    <input
+                      type="url"
+                      name="doi"
+                      value={paperForm.doi}
+                      onChange={handlePaperChange}
+                      placeholder="e.g., https://doi.org/10.xxxx"
+                      className="w-full px-3 py-2 rounded border border-gray-300 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Paper Link
+                    </label>
+                    <input
+                      type="url"
+                      name="link"
+                      value={paperForm.link}
+                      onChange={handlePaperChange}
+                      placeholder="Full link to paper"
+                      className="w-full px-3 py-2 rounded border border-gray-300 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Meta
+                    </label>
+                    <input
+                      type="text"
+                      name="meta"
+                      value={paperForm.meta}
+                      onChange={handlePaperChange}
+                      placeholder="e.g., 2025 • Conference"
+                      className="w-full px-3 py-2 rounded border border-gray-300 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Research Area Tag
+                    </label>
+                    <input
+                      type="text"
+                      name="tag"
+                      value={paperForm.tag}
+                      onChange={handlePaperChange}
+                      placeholder="e.g., Neural Engineering, AI"
+                      className="w-full px-3 py-2 rounded border border-gray-300 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={cancelPaperSubmit}
+                    disabled={paperSaving}
+                    className="px-4 py-2 rounded-full border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={paperSaving}
+                    className="px-4 py-2 rounded-full bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {paperSaving ? "Submitting..." : "Submit Publication"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
 
         {/* ADD PUBLICATION (LEAD) */}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AnimatePresence,
   motion,
@@ -846,6 +847,7 @@ function PillarCard({ value, label }) {
 }
 
 export default function Home() {
+  const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const [canTilt, setCanTilt] = useState(false);
 
@@ -1329,6 +1331,17 @@ export default function Home() {
                     </button>
                   </div>
                 )}
+
+                <div className="mt-10 flex justify-center border-t border-gray-100 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/publications")}
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-midTeal to-accentTeal px-8 py-3 text-sm font-black text-white transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accentTeal/20"
+                  >
+                    See All Publications
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </button>
+                </div>
               </>
             )}
           </Container>
