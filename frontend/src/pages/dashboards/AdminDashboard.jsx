@@ -230,6 +230,22 @@ export default function AdminDashboard() {
     }
   };
 
+  const refreshAllAuthors = async () => {
+    if (!firebaseUser) return;
+    try {
+      setAllAuthorsLoading(true);
+      setAllAuthorsError(null);
+      const idToken = await firebaseUser.getIdToken();
+      const data = await getAllAuthors(idToken);
+      setAllAuthors(data);
+    } catch (err) {
+      console.error("Failed to load authors:", err);
+      setAllAuthorsError(err.message || "Failed to load authors");
+    } finally {
+      setAllAuthorsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeSection === "addUser") {
       refreshUsers();
@@ -237,9 +253,16 @@ export default function AdminDashboard() {
     if (activeSection === "reviewPublication") {
       refreshPublications();
     }
+    if (activeSection === "manageConferences") {
+      refreshAllConferences();
+    }
+    if (activeSection === "manageAuthors") {
+      refreshAllAuthors();
+    }
     if (activeSection === "reviewInformation") {
       refreshTeams();
       refreshAllConferences();
+      refreshAllAuthors();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSection, firebaseUser]);
@@ -682,6 +705,67 @@ export default function AdminDashboard() {
     }
   };
 
+  // ---------- AUTHOR HANDLERS ----------
+
+  const handleCreateAuthor = async (e) => {
+    e.preventDefault();
+    if (!firebaseUser) return;
+    setAuthorSaving(true);
+    setAuthorError(null);
+    setAuthorMessage(null);
+
+    try {
+      const idToken = await firebaseUser.getIdToken();
+      await createAuthorByAdmin(idToken, authorForm);
+      setAuthorMessage("Author created successfully!");
+      setAuthorForm({ name: "", email: "", affiliation: "", leadId: "" });
+      await refreshAllAuthors();
+    } catch (err) {
+      console.error("Failed to create author:", err);
+      setAuthorError(err.message || "Failed to create author");
+    } finally {
+      setAuthorSaving(false);
+    }
+  };
+
+  const handleUpdateAuthor = async (e) => {
+    e.preventDefault();
+    if (!firebaseUser || !editingAuthorId) return;
+    setAuthorSaving(true);
+    setAuthorError(null);
+    setAuthorMessage(null);
+
+    try {
+      const idToken = await firebaseUser.getIdToken();
+      await updateAuthorByAdmin(idToken, editingAuthorId, authorForm);
+      setAuthorMessage("Author updated successfully!");
+      setAuthorForm({ name: "", email: "", affiliation: "", leadId: "" });
+      setEditingAuthorId(null);
+      await refreshAllAuthors();
+    } catch (err) {
+      console.error("Failed to update author:", err);
+      setAuthorError(err.message || "Failed to update author");
+    } finally {
+      setAuthorSaving(false);
+    }
+  };
+
+  const handleDeleteAuthor = async (authorId) => {
+    if (!firebaseUser) return;
+    setAuthorError(null);
+    setAuthorMessage(null);
+
+    try {
+      const idToken = await firebaseUser.getIdToken();
+      await deleteAuthorByAdmin(idToken, authorId);
+      setAuthorMessage("Author deleted successfully!");
+      await refreshAllAuthors();
+    } catch (err) {
+      console.error("Failed to delete author:", err);
+      setAuthorError(err.message || "Failed to delete author");
+    }
+  };
+
   // ---------- RENDER ----------
 
   return (
@@ -702,6 +786,8 @@ export default function AdminDashboard() {
             { id: "addUser", label: "Add User" },
             { id: "addPublication", label: "Add Publication" },
             { id: "reviewPublication", label: "Review Publication" },
+            { id: "manageConferences", label: "Manage Conferences" },
+            { id: "manageAuthors", label: "Manage Authors" },
             { id: "reviewInformation", label: "Manage Team" },
           ].map((item) => (
             <button
@@ -1363,6 +1449,428 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
+          </section>
+        )}
+
+        {/* ========== MANAGE CONFERENCES SECTION ========== */}
+        {activeSection === "manageConferences" && (
+          <section>
+            <h1 className="text-3xl font-bold text-deepTeal mb-4">
+              Manage Conferences
+            </h1>
+            <p className="text-gray-700 mb-4">
+              View, create, edit, and delete all conferences. You can manage
+              conference details, assign leads, and update statuses.
+            </p>
+
+            {allConfsError && (
+              <div className="mb-3 px-4 py-2 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+                {allConfsError}
+              </div>
+            )}
+
+            <button
+              onClick={refreshAllConferences}
+              disabled={allConfsLoading}
+              className="mb-4 px-4 py-2 rounded-lg bg-midTeal text-white text-sm hover:bg-midTeal/90 disabled:opacity-50"
+            >
+              {allConfsLoading ? "Loading..." : "Refresh Conferences"}
+            </button>
+
+            {!allConfsLoading && allConfs.length === 0 && (
+              <div className="text-gray-500 text-sm">No conferences found.</div>
+            )}
+
+            {!allConfsLoading && allConfs.length > 0 && (
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {allConfs.map((conf) => (
+                  <div
+                    key={conf._id}
+                    className="border border-gray-200 rounded-2xl bg-white shadow-sm px-4 py-3 text-xs flex flex-col gap-2"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="font-semibold text-deepTeal text-sm line-clamp-2">
+                          {conf.name || conf.title}
+                        </div>
+                        <div className="text-[11px] text-gray-600">
+                          {new Date(conf.date).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => {
+                            setConfEdits((prev) => ({
+                              ...prev,
+                              [conf._id]: {
+                                name: conf.name || "",
+                                title: conf.title || "",
+                                date: conf.date ? new Date(conf.date).toISOString().slice(0, 10) : "",
+                                link: conf.link || "",
+                                status: conf.status || "submitted",
+                                leadId: conf.lead?._id || "",
+                                authorIds: conf.authors?.map(a => a._id) || [],
+                                extraAuthorIds: conf.extraAuthors?.map(a => a._id) || [],
+                              },
+                            }));
+                          }}
+                          className="px-2 py-1 rounded text-[10px] bg-blue-50 text-blue-700 hover:bg-blue-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteConference(conf._id)}
+                          className="px-2 py-1 rounded text-[10px] bg-red-50 text-red-700 hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[11px] font-semibold text-gray-700">
+                        Lead
+                      </div>
+                      <div className="text-[11px] text-gray-600">
+                        {conf.lead?.displayName || conf.lead?.email || "—"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[11px] font-semibold text-gray-700">
+                        Status
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide ${
+                          conf.status === "published"
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : conf.status === "presented"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : conf.status === "accepted"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : "bg-gray-100 text-gray-700 border border-gray-200"
+                        }`}
+                      >
+                        {conf.status}
+                      </span>
+                    </div>
+
+                    {conf.link && (
+                      <a
+                        href={conf.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 text-[11px] text-accentTeal hover:underline"
+                      >
+                        Conference Link →
+                      </a>
+                    )}
+
+                    {/* Edit Form */}
+                    {confEdits[conf._id] && (
+                      <form
+                        onSubmit={(e) => handleSaveConferenceEdit(e, conf._id)}
+                        className="mt-3 p-3 bg-gray-50 rounded-lg space-y-2"
+                      >
+                        <div>
+                          <label className="block text-[10px] font-medium text-gray-700 mb-1">
+                            Conference Name
+                          </label>
+                          <input
+                            type="text"
+                            value={confEdits[conf._id].name}
+                            onChange={(e) =>
+                              setConfEdits((prev) => ({
+                                ...prev,
+                                [conf._id]: { ...prev[conf._id], name: e.target.value },
+                              }))
+                            }
+                            className="w-full px-2 py-1 rounded border border-gray-300 text-xs"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-gray-700 mb-1">
+                            Title
+                          </label>
+                          <input
+                            type="text"
+                            value={confEdits[conf._id].title}
+                            onChange={(e) =>
+                              setConfEdits((prev) => ({
+                                ...prev,
+                                [conf._id]: { ...prev[conf._id], title: e.target.value },
+                              }))
+                            }
+                            className="w-full px-2 py-1 rounded border border-gray-300 text-xs"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-gray-700 mb-1">
+                            Date
+                          </label>
+                          <input
+                            type="date"
+                            value={confEdits[conf._id].date}
+                            onChange={(e) =>
+                              setConfEdits((prev) => ({
+                                ...prev,
+                                [conf._id]: { ...prev[conf._id], date: e.target.value },
+                              }))
+                            }
+                            className="w-full px-2 py-1 rounded border border-gray-300 text-xs"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-gray-700 mb-1">
+                            Link
+                          </label>
+                          <input
+                            type="url"
+                            value={confEdits[conf._id].link}
+                            onChange={(e) =>
+                              setConfEdits((prev) => ({
+                                ...prev,
+                                [conf._id]: { ...prev[conf._id], link: e.target.value },
+                              }))
+                            }
+                            className="w-full px-2 py-1 rounded border border-gray-300 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-gray-700 mb-1">
+                            Status
+                          </label>
+                          <select
+                            value={confEdits[conf._id].status}
+                            onChange={(e) =>
+                              setConfEdits((prev) => ({
+                                ...prev,
+                                [conf._id]: { ...prev[conf._id], status: e.target.value },
+                              }))
+                            }
+                            className="w-full px-2 py-1 rounded border border-gray-300 text-xs"
+                          >
+                            <option value="submitted">Submitted</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="presented">Presented</option>
+                            <option value="published">Published</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveConferenceEdit(null, conf._id)}
+                            disabled={confEditSaving}
+                            className="px-3 py-1 rounded-full bg-midTeal text-white text-[11px]"
+                          >
+                            {confEditSaving ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setConfEdits((prev) => {
+                                const copy = { ...prev };
+                                delete copy[conf._id];
+                                return copy;
+                              })
+                            }
+                            className="px-3 py-1 rounded-full border border-gray-300 text-[11px]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ========== MANAGE AUTHORS SECTION ========== */}
+        {activeSection === "manageAuthors" && (
+          <section>
+            <h1 className="text-3xl font-bold text-deepTeal mb-4">
+              Manage Authors
+            </h1>
+            <p className="text-gray-700 mb-4">
+              View, create, edit, and delete all authors. You can manage author
+              details and assign them to leads.
+            </p>
+
+            {allAuthorsError && (
+              <div className="mb-3 px-4 py-2 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+                {allAuthorsError}
+              </div>
+            )}
+
+            <div className="mb-4 flex gap-4">
+              <button
+                onClick={refreshAllAuthors}
+                disabled={allAuthorsLoading}
+                className="px-4 py-2 rounded-lg bg-midTeal text-white text-sm hover:bg-midTeal/90 disabled:opacity-50"
+              >
+                {allAuthorsLoading ? "Loading..." : "Refresh Authors"}
+              </button>
+              <button
+                onClick={() => setAuthorForm({ name: "", email: "", affiliation: "", leadId: "" })}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-600/90"
+              >
+                Add New Author
+              </button>
+            </div>
+
+            {/* Add/Edit Author Form */}
+            {(authorForm.name || authorForm.email) && (
+              <div className="mb-6 p-4 bg-white rounded-2xl shadow-md border border-gray-200">
+                <h3 className="text-lg font-semibold text-deepTeal mb-3">
+                  {editingAuthorId ? "Edit Author" : "Add New Author"}
+                </h3>
+                <form onSubmit={editingAuthorId ? handleUpdateAuthor : handleCreateAuthor} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={authorForm.name}
+                      onChange={(e) => setAuthorForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={authorForm.email}
+                      onChange={(e) => setAuthorForm(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Affiliation
+                    </label>
+                    <input
+                      type="text"
+                      value={authorForm.affiliation}
+                      onChange={(e) => setAuthorForm(prev => ({ ...prev, affiliation: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Assign to Lead
+                    </label>
+                    <select
+                      value={authorForm.leadId}
+                      onChange={(e) => setAuthorForm(prev => ({ ...prev, leadId: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                    >
+                      <option value="">Select Lead (Optional)</option>
+                      {allTeams.map((team) => (
+                        <option key={team.lead._id} value={team.lead._id}>
+                          {team.lead.displayName || team.lead.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="submit"
+                      disabled={authorSaving}
+                      className="px-4 py-2 rounded-lg bg-midTeal text-white text-sm hover:bg-midTeal/90 disabled:opacity-50"
+                    >
+                      {authorSaving ? "Saving..." : editingAuthorId ? "Update Author" : "Create Author"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthorForm({ name: "", email: "", affiliation: "", leadId: "" });
+                        setEditingAuthorId(null);
+                      }}
+                      className="px-4 py-2 rounded-lg border border-gray-300 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {!allAuthorsLoading && allAuthors.length === 0 && (
+              <div className="text-gray-500 text-sm">No authors found.</div>
+            )}
+
+            {!allAuthorsLoading && allAuthors.length > 0 && (
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {allAuthors.map((author) => (
+                  <div
+                    key={author._id}
+                    className="border border-gray-200 rounded-2xl bg-white shadow-sm px-4 py-3 text-xs flex flex-col gap-2"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="font-semibold text-deepTeal text-sm">
+                          {author.name}
+                        </div>
+                        <div className="text-[11px] text-gray-600">
+                          {author.email}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingAuthorId(author._id);
+                            setAuthorForm({
+                              name: author.name || "",
+                              email: author.email || "",
+                              affiliation: author.affiliation || "",
+                              leadId: author.lead?._id || "",
+                            });
+                          }}
+                          className="px-2 py-1 rounded text-[10px] bg-blue-50 text-blue-700 hover:bg-blue-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAuthor(author._id)}
+                          className="px-2 py-1 rounded text-[10px] bg-red-50 text-red-700 hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[11px] font-semibold text-gray-700">
+                        Affiliation
+                      </div>
+                      <div className="text-[11px] text-gray-600">
+                        {author.affiliation || "Not specified"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[11px] font-semibold text-gray-700">
+                        Lead
+                      </div>
+                      <div className="text-[11px] text-gray-600">
+                        {author.lead?.displayName || author.lead?.email || "Unassigned"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
