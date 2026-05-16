@@ -633,6 +633,7 @@ export default function AdminDashboard() {
           : [];
 
       await createConferenceForLead(idToken, {
+        name: newConfForm.title,
         title: newConfForm.title,
         date: newConfForm.date,
         link: newConfForm.link,
