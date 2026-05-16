@@ -802,13 +802,28 @@ function PublicationCard({ pub, index }) {
       )}
 
       <div className="mt-auto flex flex-col gap-3 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
-        {pub.tag ? (
-          <span className="inline-flex w-fit rounded-full border border-accentTeal/15 bg-gradient-to-r from-midTeal/8 to-accentTeal/8 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-accentTeal">
-            {pub.tag}
-          </span>
-        ) : (
-          <span />
-        )}
+        <div className="flex flex-wrap gap-2">
+          {pub.publisher && pub.publisher !== "Other" && (
+            <span className="inline-flex w-fit rounded-full border border-accentTeal/15 bg-gradient-to-r from-midTeal/8 to-accentTeal/8 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-accentTeal">
+              {pub.publisher}
+            </span>
+          )}
+          {pub.quarter && pub.quarter !== "Other" && (
+            <span className="inline-flex w-fit rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-indigo-700">
+              {pub.quarter}
+            </span>
+          )}
+          {pub.scopusIndexed && (
+            <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">
+              Scopus
+            </span>
+          )}
+          {pub.tag && (
+            <span className="inline-flex w-fit rounded-full border border-accentTeal/15 bg-gradient-to-r from-midTeal/8 to-accentTeal/8 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-accentTeal">
+              {pub.tag}
+            </span>
+          )}
+        </div>
 
         {pub.link && (
           <a
@@ -855,6 +870,9 @@ export default function Home() {
   const [pubLoading, setPubLoading] = useState(true);
   const [pubError, setPubError] = useState(null);
   const [page, setPage] = useState(1);
+  const [selectedQuarter, setSelectedQuarter] = useState("All");
+  const [selectedPublisher, setSelectedPublisher] = useState("All");
+  const [scopusFilter, setScopusFilter] = useState("All");
 
   const itemsPerPage = 6;
 
@@ -901,15 +919,29 @@ export default function Home() {
     };
   }, []);
 
+  const filteredPublications = useMemo(() => {
+    return publications.filter((pub) => {
+      const matchesQuarter =
+        selectedQuarter === "All" || pub.quarter === selectedQuarter;
+      const matchesPublisher =
+        selectedPublisher === "All" || pub.publisher === selectedPublisher;
+      const matchesScopus =
+        scopusFilter === "All" ||
+        (scopusFilter === "Scopus" && pub.scopusIndexed) ||
+        (scopusFilter === "Non-Scopus" && !pub.scopusIndexed);
+      return matchesQuarter && matchesPublisher && matchesScopus;
+    });
+  }, [publications, selectedQuarter, selectedPublisher, scopusFilter]);
+
   const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(publications.length / itemsPerPage)),
-    [publications.length]
+    () => Math.max(1, Math.ceil(filteredPublications.length / itemsPerPage)),
+    [filteredPublications.length]
   );
 
   const paginatedPublications = useMemo(() => {
     const start = (page - 1) * itemsPerPage;
-    return publications.slice(start, start + itemsPerPage);
-  }, [page, publications]);
+    return filteredPublications.slice(start, start + itemsPerPage);
+  }, [page, filteredPublications]);
 
   useEffect(() => {
     setPage((prev) => Math.min(prev, totalPages));
@@ -1286,62 +1318,137 @@ export default function Home() {
 
             {!pubLoading && publications.length > 0 && (
               <>
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={page}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.22 }}
-                    className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
-                  >
-                    {paginatedPublications.map((pub, i) => (
-                      <PublicationCard
-                        key={pub._id || `${pub.title}-${i}`}
-                        pub={pub}
-                        index={i}
-                      />
-                    ))}
-                  </motion.div>
-                </AnimatePresence>
-
-                {totalPages > 1 && (
-                  <div className="mt-10 flex flex-col gap-4 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                    <button
-                      type="button"
-                      onClick={() => goToPage(Math.max(1, page - 1))}
-                      disabled={page === 1}
-                      className="inline-flex items-center justify-center rounded-full border border-midTeal px-5 py-2.5 text-sm font-black text-midTeal transition-all duration-200 hover:bg-midTeal hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                    >
-                      Previous
-                    </button>
-
-                    <span className="text-center text-sm font-medium text-gray-400">
-                      Page <strong className="text-deepTeal">{page}</strong> /{" "}
-                      <strong className="text-deepTeal">{totalPages}</strong>
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => goToPage(Math.min(totalPages, page + 1))}
-                      disabled={page === totalPages}
-                      className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-midTeal to-accentTeal px-5 py-2.5 text-sm font-black text-white transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accentTeal/20 disabled:cursor-not-allowed disabled:opacity-30"
-                    >
-                      Next
-                    </button>
+                <div className="mb-6 grid gap-4 rounded-3xl border border-gray-200 bg-white/80 px-4 py-4 sm:grid-cols-[minmax(200px,1fr)_minmax(200px,1fr)_minmax(160px,1fr)]">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-midTeal">
+                      Quarter
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {['All', 'Q1', 'Q2', 'Q3', 'Q4'].map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => { setSelectedQuarter(option); setPage(1); }}
+                          className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                            selectedQuarter === option
+                              ? 'border-midTeal bg-midTeal/10 text-midTeal'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-midTeal/40 hover:text-midTeal'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                )}
 
-                <div className="mt-10 flex justify-center border-t border-gray-100 pt-6">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/publications")}
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-midTeal to-accentTeal px-8 py-3 text-sm font-black text-white transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accentTeal/20"
-                  >
-                    See All Publications
-                    <ArrowRightIcon className="h-4 w-4" />
-                  </button>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-midTeal">
+                      Publisher
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {['All', 'IEEE', 'Springer', 'Taylor Francis'].map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => { setSelectedPublisher(option); setPage(1); }}
+                          className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                            selectedPublisher === option
+                              ? 'border-midTeal bg-midTeal/10 text-midTeal'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-midTeal/40 hover:text-midTeal'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-midTeal">
+                      Scopus
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {['All', 'Scopus', 'Non-Scopus'].map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => { setScopusFilter(option); setPage(1); }}
+                          className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                            scopusFilter === option
+                              ? 'border-midTeal bg-midTeal/10 text-midTeal'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-midTeal/40 hover:text-midTeal'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+
+                {filteredPublications.length === 0 ? (
+                  <div className="py-14 text-center text-sm text-gray-500">
+                    No publications match the selected filters.
+                  </div>
+                ) : (
+                  <>
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={page}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -12 }}
+                        transition={{ duration: 0.22 }}
+                        className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
+                      >
+                        {paginatedPublications.map((pub, i) => (
+                          <PublicationCard
+                            key={pub._id || `${pub.title}-${i}`}
+                            pub={pub}
+                            index={i}
+                          />
+                        ))}
+                      </motion.div>
+                    </AnimatePresence>
+
+                    {totalPages > 1 && (
+                      <div className="mt-10 flex flex-col gap-4 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                        <button
+                          type="button"
+                          onClick={() => goToPage(Math.max(1, page - 1))}
+                          disabled={page === 1}
+                          className="inline-flex items-center justify-center rounded-full border border-midTeal px-5 py-2.5 text-sm font-black text-midTeal transition-all duration-200 hover:bg-midTeal hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          Previous
+                        </button>
+
+                        <span className="text-center text-sm font-medium text-gray-400">
+                          Page <strong className="text-deepTeal">{page}</strong> / <strong className="text-deepTeal">{totalPages}</strong>
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => goToPage(Math.min(totalPages, page + 1))}
+                          disabled={page === totalPages}
+                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-midTeal to-accentTeal px-5 py-2.5 text-sm font-black text-white transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accentTeal/20 disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="mt-10 flex justify-center border-t border-gray-100 pt-6">
+                      <button
+                        type="button"
+                        onClick={() => navigate("/publications")}
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-midTeal to-accentTeal px-8 py-3 text-sm font-black text-white transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accentTeal/20"
+                      >
+                        See All Publications
+                        <ArrowRightIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </Container>
@@ -1413,15 +1520,15 @@ export default function Home() {
               <div className="grid gap-5 md:grid-cols-3">
                 {[
                   {
-                    
+                    label: "Human Resource & Events",
                     members: teamMembers.hrm,
                   },
                   {
-              
+                    label: "Public Relations",
                     members: teamMembers.designer,
                   },
                   {
-                  
+                    label: "Information Technology",
                     members: teamMembers.it,
                   },
                 ].map((group, gi) => (

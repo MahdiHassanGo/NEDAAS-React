@@ -65,6 +65,9 @@ export default function AdminDashboard() {
     authors: "",
     description: "",
     tag: "",
+    quarter: "Other",
+    publisher: "Other",
+    scopusIndexed: false,
     link: "",
     linkLabel: "View article",
   });
@@ -84,6 +87,9 @@ export default function AdminDashboard() {
     authors: "",
     description: "",
     tag: "",
+    quarter: "Other",
+    publisher: "Other",
+    scopusIndexed: false,
     link: "",
     linkLabel: "View article",
   });
@@ -123,6 +129,7 @@ export default function AdminDashboard() {
   // New conference form (per lead)
   const [openLeadForNewConf, setOpenLeadForNewConf] = useState(null);
   const [newConfForm, setNewConfForm] = useState({
+    leadId: "",
     title: "",
     date: "",
     link: "",
@@ -254,6 +261,7 @@ export default function AdminDashboard() {
       refreshPublications();
     }
     if (activeSection === "manageConferences") {
+      refreshTeams();
       refreshAllConferences();
     }
     if (activeSection === "manageAuthors") {
@@ -427,6 +435,9 @@ export default function AdminDashboard() {
       authors: pub.authors || "",
       description: pub.description || "",
       tag: pub.tag || "",
+      quarter: pub.quarter || "Other",
+      publisher: pub.publisher || "Other",
+      scopusIndexed: Boolean(pub.scopusIndexed),
       link: pub.link || "",
       linkLabel: pub.linkLabel || "View article",
     });
@@ -435,8 +446,11 @@ export default function AdminDashboard() {
   };
 
   const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleEditSubmit = async (e) => {
@@ -629,6 +643,7 @@ export default function AdminDashboard() {
 
       setNewConfMessage("Conference created for this lead.");
       setNewConfForm({
+        leadId: "",
         title: "",
         date: "",
         link: "",
@@ -1043,7 +1058,7 @@ export default function AdminDashboard() {
               onSubmit={handlePubSubmit}
               className="bg-white rounded-2xl shadow-md border border-gray-200 p-6 max-w-2xl space-y-4"
             >
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Meta (e.g., 2023 • Journal)
@@ -1059,17 +1074,54 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Tag (e.g., Healthcare, Neural Engineering)
+                    Quarter
                   </label>
-                  <input
-                    type="text"
-                    name="tag"
-                    value={pubForm.tag}
+                  <select
+                    name="quarter"
+                    value={pubForm.quarter}
                     onChange={handlePubChange}
-                    required
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
-                  />
+                  >
+                    <option value="Other">Other</option>
+                    <option value="Q1">Q1</option>
+                    <option value="Q2">Q2</option>
+                    <option value="Q3">Q3</option>
+                    <option value="Q4">Q4</option>
+                  </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Publisher
+                  </label>
+                  <select
+                    name="publisher"
+                    value={pubForm.publisher}
+                    onChange={handlePubChange}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  >
+                    <option value="Other">Other</option>
+                    <option value="IEEE">IEEE</option>
+                    <option value="Springer">Springer</option>
+                    <option value="Taylor Francis">Taylor Francis</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="scopusIndexed"
+                    checked={pubForm.scopusIndexed}
+                    onChange={(e) =>
+                      setPubForm((prev) => ({
+                        ...prev,
+                        scopusIndexed: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-gray-300 text-midTeal focus:ring-midTeal"
+                  />
+                  Indexed in Scopus
+                </label>
               </div>
 
               <div>
@@ -1336,7 +1388,7 @@ export default function AdminDashboard() {
                       </span>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-3">
+                    <div className="grid md:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Meta
@@ -1351,16 +1403,54 @@ export default function AdminDashboard() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Tag
+                          Quarter
                         </label>
-                        <input
-                          type="text"
-                          name="tag"
-                          value={editForm.tag}
+                        <select
+                          name="quarter"
+                          value={editForm.quarter}
                           onChange={handleEditChange}
                           className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
-                        />
+                        >
+                          <option value="Other">Other</option>
+                          <option value="Q1">Q1</option>
+                          <option value="Q2">Q2</option>
+                          <option value="Q3">Q3</option>
+                          <option value="Q4">Q4</option>
+                        </select>
                       </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Publisher
+                        </label>
+                        <select
+                          name="publisher"
+                          value={editForm.publisher}
+                          onChange={handleEditChange}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                        >
+                          <option value="Other">Other</option>
+                          <option value="IEEE">IEEE</option>
+                          <option value="Springer">Springer</option>
+                          <option value="Taylor Francis">Taylor Francis</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+                        <input
+                          type="checkbox"
+                          name="scopusIndexed"
+                          checked={editForm.scopusIndexed}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              scopusIndexed: e.target.checked,
+                            }))
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-midTeal focus:ring-midTeal"
+                        />
+                        Indexed in Scopus
+                      </label>
                     </div>
 
                     <div>
@@ -1476,6 +1566,114 @@ export default function AdminDashboard() {
             >
               {allConfsLoading ? "Loading..." : "Refresh Conferences"}
             </button>
+
+            <div className="mb-6 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-deepTeal mb-3">
+                Add Conference
+              </h2>
+              <form
+                onSubmit={(e) => {
+                  const selectedTeam = teams.find(
+                    (team) => team.lead?._id === newConfForm.leadId
+                  );
+                  handleCreateConferenceForLead(e, newConfForm.leadId, selectedTeam);
+                }}
+                className="grid gap-4 sm:grid-cols-2"
+              >
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Lead
+                  </label>
+                  <select
+                    name="leadId"
+                    value={newConfForm.leadId}
+                    onChange={handleNewConfChange}
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  >
+                    <option value="">Select a lead</option>
+                    {teams.map((team) => (
+                      <option key={team._id} value={team.lead?._id || ""}>
+                        {team.lead?.displayName || team.lead?.email || "Unnamed Lead"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Conference Name
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={newConfForm.title}
+                    onChange={handleNewConfChange}
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    name="date"
+                    value={newConfForm.date}
+                    onChange={handleNewConfChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    value={newConfForm.status}
+                    onChange={handleNewConfChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  >
+                    <option value="submitted">Submitted</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="presented">Presented</option>
+                    <option value="published">Published</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Conference Link
+                  </label>
+                  <input
+                    type="url"
+                    name="link"
+                    value={newConfForm.link}
+                    onChange={handleNewConfChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  />
+                </div>
+
+                <div className="sm:col-span-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={newConfSaving || !newConfForm.leadId}
+                    className="rounded-full bg-midTeal px-5 py-2 text-sm font-semibold text-white hover:bg-midTeal/90 disabled:opacity-50"
+                  >
+                    {newConfSaving ? "Saving..." : "Create Conference"}
+                  </button>
+                </div>
+              </form>
+              {newConfMessage && (
+                <p className="mt-3 text-sm text-emerald-700">{newConfMessage}</p>
+              )}
+              {newConfError && (
+                <p className="mt-3 text-sm text-red-700">{newConfError}</p>
+              )}
+            </div>
 
             {!allConfsLoading && allConfs.length === 0 && (
               <div className="text-gray-500 text-sm">No conferences found.</div>

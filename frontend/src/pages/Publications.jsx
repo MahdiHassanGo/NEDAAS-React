@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { getPublicationsPublic } from "../api/adminApi";
 
@@ -85,13 +85,28 @@ function PublicationCard({ pub, index }) {
       )}
 
       <div className="mt-auto flex flex-col gap-3 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
-        {pub.tag ? (
-          <span className="inline-flex w-fit rounded-full border border-accentTeal/15 bg-gradient-to-r from-midTeal/8 to-accentTeal/8 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-accentTeal">
-            {pub.tag}
-          </span>
-        ) : (
-          <span />
-        )}
+        <div className="flex flex-wrap gap-2">
+          {pub.publisher && pub.publisher !== "Other" && (
+            <span className="inline-flex w-fit rounded-full border border-accentTeal/15 bg-gradient-to-r from-midTeal/8 to-accentTeal/8 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-accentTeal">
+              {pub.publisher}
+            </span>
+          )}
+          {pub.quarter && pub.quarter !== "Other" && (
+            <span className="inline-flex w-fit rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-indigo-700">
+              {pub.quarter}
+            </span>
+          )}
+          {pub.scopusIndexed && (
+            <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">
+              Scopus
+            </span>
+          )}
+          {pub.tag && (
+            <span className="inline-flex w-fit rounded-full border border-accentTeal/15 bg-gradient-to-r from-midTeal/8 to-accentTeal/8 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-accentTeal">
+              {pub.tag}
+            </span>
+          )}
+        </div>
 
         {pub.link && (
           <a
@@ -151,6 +166,25 @@ export default function Publications() {
   const [publications, setPublications] = useState([]);
   const [pubLoading, setPubLoading] = useState(true);
   const [pubError, setPubError] = useState(null);
+  const [selectedQuarter, setSelectedQuarter] = useState("All");
+  const [selectedPublisher, setSelectedPublisher] = useState("All");
+  const [scopusFilter, setScopusFilter] = useState("All");
+
+  const filteredPublications = useMemo(
+    () =>
+      publications.filter((pub) => {
+        const matchesQuarter =
+          selectedQuarter === "All" || pub.quarter === selectedQuarter;
+        const matchesPublisher =
+          selectedPublisher === "All" || pub.publisher === selectedPublisher;
+        const matchesScopus =
+          scopusFilter === "All" ||
+          (scopusFilter === "Scopus" && pub.scopusIndexed) ||
+          (scopusFilter === "Non-Scopus" && !pub.scopusIndexed);
+        return matchesQuarter && matchesPublisher && matchesScopus;
+      }),
+    [publications, selectedQuarter, selectedPublisher, scopusFilter]
+  );
 
   useEffect(() => {
     const loadPublications = async () => {
@@ -220,26 +254,102 @@ export default function Publications() {
           )}
 
           {!pubLoading && publications.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.35 }}
-              className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
-            >
-              {publications.map((pub, i) => (
-                <PublicationCard
-                  key={pub._id || `${pub.title}-${i}`}
-                  pub={pub}
-                  index={i}
-                />
-              ))}
-            </motion.div>
+            <>
+              <div className="mb-6 grid gap-4 rounded-3xl border border-gray-200 bg-white/80 px-4 py-4 sm:grid-cols-[minmax(200px,1fr)_minmax(200px,1fr)_minmax(160px,1fr)]">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-midTeal">
+                    Quarter
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {['All', 'Q1', 'Q2', 'Q3', 'Q4'].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setSelectedQuarter(option)}
+                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                          selectedQuarter === option
+                            ? 'border-midTeal bg-midTeal/10 text-midTeal'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-midTeal/40 hover:text-midTeal'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-midTeal">
+                    Publisher
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {['All', 'IEEE', 'Springer', 'Taylor Francis'].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setSelectedPublisher(option)}
+                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                          selectedPublisher === option
+                            ? 'border-midTeal bg-midTeal/10 text-midTeal'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-midTeal/40 hover:text-midTeal'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-midTeal">
+                    Scopus
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {['All', 'Scopus', 'Non-Scopus'].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setScopusFilter(option)}
+                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+                          scopusFilter === option
+                            ? 'border-midTeal bg-midTeal/10 text-midTeal'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-midTeal/40 hover:text-midTeal'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {filteredPublications.length === 0 ? (
+                <div className="py-14 text-center text-sm text-gray-500">
+                  No publications match the selected filters.
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.35 }}
+                  className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
+                >
+                  {filteredPublications.map((pub, i) => (
+                    <PublicationCard
+                      key={pub._id || `${pub.title}-${i}`}
+                      pub={pub}
+                      index={i}
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </>
           )}
 
           {!pubLoading && publications.length > 0 && (
             <div className="mt-12 border-t border-gray-100 pt-8 text-center">
               <p className="text-sm font-medium text-gray-500">
-                Showing all <strong className="text-deepTeal">{publications.length}</strong> publications
+                Showing {filteredPublications.length} of <strong className="text-deepTeal">{publications.length}</strong> publications
               </p>
             </div>
           )}

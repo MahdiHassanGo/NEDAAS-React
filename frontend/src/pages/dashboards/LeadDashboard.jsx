@@ -47,6 +47,9 @@ export default function LeadDashboard() {
     authors: "",
     description: "",
     tag: "",
+    quarter: "Other",
+    publisher: "Other",
+    scopusIndexed: false,
     link: "",
     linkLabel: "View article",
   });
@@ -181,8 +184,11 @@ export default function LeadDashboard() {
    * ==========================*/
 
   const handleLeadPubChange = (e) => {
-    const { name, value } = e.target;
-    setPubForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setPubForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleLeadPubSubmit = async (e) => {
@@ -208,6 +214,9 @@ export default function LeadDashboard() {
         authors: "",
         description: "",
         tag: "",
+        quarter: "Other",
+        publisher: "Other",
+        scopusIndexed: false,
         link: "",
         linkLabel: "View article",
       });
@@ -1664,7 +1673,7 @@ export default function LeadDashboard() {
               onSubmit={handleLeadPubSubmit}
               className="bg-white rounded-2xl shadow-md border border-gray-200 p-6 max-w-2xl space-y-4"
             >
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Meta (e.g., 2025 • Conference)
@@ -1680,17 +1689,49 @@ export default function LeadDashboard() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Tag (e.g., Healthcare, ML, Neural Engineering)
+                    Quarter
                   </label>
-                  <input
-                    type="text"
-                    name="tag"
-                    value={pubForm.tag}
+                  <select
+                    name="quarter"
+                    value={pubForm.quarter}
                     onChange={handleLeadPubChange}
-                    required
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
-                  />
+                  >
+                    <option value="Other">Other</option>
+                    <option value="Q1">Q1</option>
+                    <option value="Q2">Q2</option>
+                    <option value="Q3">Q3</option>
+                    <option value="Q4">Q4</option>
+                  </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Publisher
+                  </label>
+                  <select
+                    name="publisher"
+                    value={pubForm.publisher}
+                    onChange={handleLeadPubChange}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  >
+                    <option value="Other">Other</option>
+                    <option value="IEEE">IEEE</option>
+                    <option value="Springer">Springer</option>
+                    <option value="Taylor Francis">Taylor Francis</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="scopusIndexed"
+                    checked={pubForm.scopusIndexed}
+                    onChange={handleLeadPubChange}
+                    className="h-4 w-4 rounded border-gray-300 text-midTeal focus:ring-midTeal"
+                  />
+                  Indexed in Scopus
+                </label>
               </div>
 
               <div>
