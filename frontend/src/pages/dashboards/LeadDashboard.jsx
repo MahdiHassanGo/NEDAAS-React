@@ -1765,6 +1765,21 @@ export default function LeadDashboard() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Research Area Tag (e.g., Healthcare, Neural Engineering)
+                </label>
+                <input
+                  type="text"
+                  name="tag"
+                  value={pubForm.tag}
+                  onChange={handleLeadPubChange}
+                  required
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                  placeholder="e.g., Neural Engineering, AI"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Description / Abstract (short)
                 </label>
                 <textarea

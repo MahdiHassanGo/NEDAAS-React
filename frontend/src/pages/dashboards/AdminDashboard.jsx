@@ -1155,6 +1155,21 @@ export default function AdminDashboard() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Research Area Tag (e.g., Healthcare, Neural Engineering)
+                </label>
+                <input
+                  type="text"
+                  name="tag"
+                  value={pubForm.tag}
+                  onChange={handlePubChange}
+                  required
+                  placeholder="e.g., Neural Engineering, AI"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Description
                 </label>
                 <textarea
@@ -1177,6 +1192,7 @@ export default function AdminDashboard() {
                     name="link"
                     value={pubForm.link}
                     onChange={handlePubChange}
+                    required
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
                   />
                 </div>
@@ -1399,6 +1415,7 @@ export default function AdminDashboard() {
                           name="meta"
                           value={editForm.meta}
                           onChange={handleEditChange}
+                          required
                           className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
                         />
                       </div>
@@ -1463,6 +1480,7 @@ export default function AdminDashboard() {
                         name="title"
                         value={editForm.title}
                         onChange={handleEditChange}
+                        required
                         className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
                       />
                     </div>
@@ -1476,6 +1494,21 @@ export default function AdminDashboard() {
                         name="authors"
                         value={editForm.authors}
                         onChange={handleEditChange}
+                        required
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Research Area Tag
+                      </label>
+                      <input
+                        type="text"
+                        name="tag"
+                        value={editForm.tag}
+                        onChange={handleEditChange}
+                        required
                         className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
                       />
                     </div>
@@ -1488,6 +1521,7 @@ export default function AdminDashboard() {
                         name="description"
                         value={editForm.description}
                         onChange={handleEditChange}
+                        required
                         rows={3}
                         className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
                       />
@@ -1503,6 +1537,7 @@ export default function AdminDashboard() {
                           name="link"
                           value={editForm.link}
                           onChange={handleEditChange}
+                          required
                           className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
                         />
                       </div>
