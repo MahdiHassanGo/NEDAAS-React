@@ -1716,6 +1716,9 @@ export default function LeadDashboard() {
                   >
                     <option value="Other">Other</option>
                     <option value="IEEE">IEEE</option>
+                    <option value="Elsevier">Elsevier</option>
+                    <option value="ACM Library">ACM Library</option>
+                    <option value="AIP">AIP</option>
                     <option value="Springer">Springer</option>
                     <option value="Taylor Francis">Taylor Francis</option>
                   </select>

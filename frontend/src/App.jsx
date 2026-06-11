@@ -13,6 +13,8 @@ const LeadDashboard = lazy(() => import("./pages/dashboards/LeadDashboard"));
 const MemberDashboard = lazy(() => import("./pages/dashboards/MemberDashboard"));
 const AdminDashboard = lazy(() => import("./pages/dashboards/AdminDashboard"));
 
+const PublicationDetail = lazy(() => import("./pages/PublicationDetail"));
+
 function PageLoader() {
   return (
     <div className="flex min-h-[40vh] items-center justify-center">
@@ -25,12 +27,48 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Show loader for exactly 5 seconds
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000);
+    const imagesToPreload = [
+      "/Images/logo.png",
+      "/Images/Brain2.png",
+      "/Images/Leader.png",
+      "/Images/Tahsin.png",
+      "/Images/advisor2.jpg",
+      "/Images/Advisor1.jpg",
+      "/Images/passport-size_photo.jpg",
+      "/Images/Sunipun.png",
+      "/Images/SIFAT.jpg",
+      "/Images/MOYNUL.png",
+      "/Images/Arko.png",
+      "/Images/tamim.png",
+      "/Images/chaki.jpeg",
+      "/Images/Asif.png"
+    ];
 
-    return () => clearTimeout(timer);
+    const preloadImage = (src) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = resolve;
+        img.onerror = resolve; // resolve anyway to avoid hanging indefinitely on failure
+      });
+    };
+
+    const preloadAll = async () => {
+      try {
+        const preloadPromises = imagesToPreload.map((src) => preloadImage(src));
+        // Wait for both the minimum 3 seconds timer AND all images to finish preloading
+        await Promise.all([
+          ...preloadPromises,
+          new Promise((resolve) => setTimeout(resolve, 3000))
+        ]);
+      } catch (err) {
+        console.error("Failed to preload images:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    preloadAll();
   }, []);
 
   if (isLoading) {
@@ -63,6 +101,15 @@ function App() {
           element={
             <Layout fullWidth>
               <Publications />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/publications/:id"
+          element={
+            <Layout fullWidth>
+              <PublicationDetail />
             </Layout>
           }
         />

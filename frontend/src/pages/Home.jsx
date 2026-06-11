@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   AnimatePresence,
   motion,
@@ -767,6 +767,40 @@ function MemberCard({ member, size = "md", index = 0, enableTilt = false }) {
   );
 }
 
+function renderAuthors(authorsStr) {
+  let parsed = [];
+  try {
+    if (authorsStr && authorsStr.trim().startsWith("[")) {
+      parsed = JSON.parse(authorsStr);
+    } else if (authorsStr) {
+      parsed = authorsStr.split(",").map(name => ({ name: name.trim(), scholarLink: "" }));
+    }
+  } catch (e) {
+    parsed = authorsStr ? authorsStr.split(",").map(name => ({ name: name.trim(), scholarLink: "" })) : [];
+  }
+
+  return parsed.map((author, index) => {
+    const isLast = index === parsed.length - 1;
+    return (
+      <span key={index}>
+        {author.scholarLink ? (
+          <a
+            href={author.scholarLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline hover:text-midTeal text-gray-400 font-semibold cursor-pointer transition-colors"
+          >
+            {author.name}
+          </a>
+        ) : (
+          <span>{author.name}</span>
+        )}
+        {!isLast && <span className="text-gray-400 mr-1.5">,</span>}
+      </span>
+    );
+  });
+}
+
 function PublicationCard({ pub, index }) {
   return (
     <motion.div
@@ -793,7 +827,9 @@ function PublicationCard({ pub, index }) {
         {pub.title}
       </h3>
 
-      <p className="mb-3 text-[11px] font-semibold text-gray-400">{pub.authors}</p>
+      <p className="mb-3 text-[11px] font-semibold text-gray-400">
+        {renderAuthors(pub.authors)}
+      </p>
 
       {pub.description && (
         <p className="mb-4 line-clamp-3 text-xs leading-relaxed text-gray-500">
@@ -825,17 +861,28 @@ function PublicationCard({ pub, index }) {
           )}
         </div>
 
-        {pub.link && (
-          <a
-            href={pub.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group/lnk inline-flex items-center gap-1.5 text-xs font-bold text-midTeal transition-colors hover:text-accentTeal"
+        <div className="flex items-center gap-2">
+          <Link
+            to={`/publications/${pub._id}`}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-midTeal transition-colors hover:text-accentTeal"
           >
-            {pub.linkLabel || "Read article"}
-            <ArrowUpRightIcon className="h-3.5 w-3.5 transition-transform group-hover/lnk:translate-x-0.5 group-hover/lnk:-translate-y-0.5" />
-          </a>
-        )}
+            View details
+          </Link>
+          {pub.link && (
+            <>
+              <span className="text-gray-200 text-xs">|</span>
+              <a
+                href={pub.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group/lnk inline-flex items-center gap-1.5 text-xs font-bold text-midTeal transition-colors hover:text-accentTeal"
+              >
+                {pub.linkLabel || "Read article"}
+                <ArrowUpRightIcon className="h-3.5 w-3.5 transition-transform group-hover/lnk:translate-x-0.5 group-hover/lnk:-translate-y-0.5" />
+              </a>
+            </>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -1346,7 +1393,7 @@ export default function Home() {
                       Publisher
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {['All', 'IEEE', 'Springer', 'Taylor Francis'].map((option) => (
+                      {['All', 'IEEE', 'Elsevier', 'ACM Library', 'AIP', 'Springer', 'Taylor Francis'].map((option) => (
                         <button
                           key={option}
                           type="button"

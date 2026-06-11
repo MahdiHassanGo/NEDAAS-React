@@ -31,6 +31,40 @@ import {
 const ROLES = ["member", "lead", "advisor", "director", "admin"];
 const ROOT_ADMIN_EMAIL = "mahdiasif78@gmail.com";
 
+function renderAuthors(authorsStr) {
+  let parsed = [];
+  try {
+    if (authorsStr && authorsStr.trim().startsWith("[")) {
+      parsed = JSON.parse(authorsStr);
+    } else if (authorsStr) {
+      parsed = authorsStr.split(",").map(name => ({ name: name.trim(), scholarLink: "" }));
+    }
+  } catch (e) {
+    parsed = authorsStr ? authorsStr.split(",").map(name => ({ name: name.trim(), scholarLink: "" })) : [];
+  }
+
+  return parsed.map((author, index) => {
+    const isLast = index === parsed.length - 1;
+    return (
+      <span key={index}>
+        {author.scholarLink ? (
+          <a
+            href={author.scholarLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-midTeal cursor-pointer"
+          >
+            {author.name}
+          </a>
+        ) : (
+          <span>{author.name}</span>
+        )}
+        {!isLast && <span className="mr-1">,</span>}
+      </span>
+    );
+  });
+}
+
 export default function AdminDashboard() {
   const { firebaseUser } = useAuth();
   const [activeSection, setActiveSection] = useState("addUser");
@@ -74,6 +108,40 @@ export default function AdminDashboard() {
   const [pubMessage, setPubMessage] = useState(null);
   const [pubError, setPubError] = useState(null);
   const [pubLoading, setPubLoading] = useState(false);
+
+  const [pubAuthors, setPubAuthors] = useState([
+    { name: "", scholarLink: "" },
+    { name: "", scholarLink: "" },
+    { name: "", scholarLink: "" },
+    { name: "", scholarLink: "" },
+    { name: "", scholarLink: "" },
+  ]);
+
+  const [editAuthors, setEditAuthors] = useState([]);
+
+  const handleAddMorePubAuthor = () => {
+    setPubAuthors((prev) => [...prev, { name: "", scholarLink: "" }]);
+  };
+
+  const handlePubAuthorChange = (index, field, value) => {
+    setPubAuthors((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleAddMoreEditAuthor = () => {
+    setEditAuthors((prev) => [...prev, { name: "", scholarLink: "" }]);
+  };
+
+  const handleEditAuthorChange = (index, field, value) => {
+    setEditAuthors((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
 
   // --------- PUBLICATIONS (REVIEW/EDIT) ----------
   const [publications, setPublications] = useState([]);
@@ -392,7 +460,18 @@ export default function AdminDashboard() {
     try {
       setPubLoading(true);
       const idToken = await firebaseUser.getIdToken();
-      await createPublication(idToken, pubForm);
+      
+      const activeAuthors = pubAuthors.filter((a) => a.name.trim() !== "");
+      if (activeAuthors.length === 0) {
+        throw new Error("At least one author name is required.");
+      }
+      const serializedAuthors = JSON.stringify(activeAuthors);
+
+      await createPublication(idToken, {
+        ...pubForm,
+        authors: serializedAuthors,
+      });
+
       setPubMessage("Publication added and approved successfully.");
       setPubForm({
         meta: "",
@@ -402,7 +481,17 @@ export default function AdminDashboard() {
         tag: "",
         link: "",
         linkLabel: "View article",
+        quarter: "Other",
+        publisher: "Other",
+        scopusIndexed: false,
       });
+      setPubAuthors([
+        { name: "", scholarLink: "" },
+        { name: "", scholarLink: "" },
+        { name: "", scholarLink: "" },
+        { name: "", scholarLink: "" },
+        { name: "", scholarLink: "" },
+      ]);
     } catch (err) {
       console.error("Failed to add publication:", err);
       setPubError(err.message || "Failed to add publication");
@@ -441,6 +530,23 @@ export default function AdminDashboard() {
       link: pub.link || "",
       linkLabel: pub.linkLabel || "View article",
     });
+
+    let parsedAuthors = [];
+    try {
+      if (pub.authors && pub.authors.trim().startsWith("[")) {
+        parsedAuthors = JSON.parse(pub.authors);
+      } else if (pub.authors) {
+        parsedAuthors = pub.authors.split(",").map((name) => ({ name: name.trim(), scholarLink: "" }));
+      }
+    } catch (e) {
+      parsedAuthors = pub.authors ? pub.authors.split(",").map((name) => ({ name: name.trim(), scholarLink: "" })) : [];
+    }
+
+    while (parsedAuthors.length < 5) {
+      parsedAuthors.push({ name: "", scholarLink: "" });
+    }
+    setEditAuthors(parsedAuthors);
+
     setReviewMessage(null);
     setPublicationsError(null);
   };
@@ -461,7 +567,17 @@ export default function AdminDashboard() {
       setEditLoading(true);
       setPublicationsError(null);
       const idToken = await firebaseUser.getIdToken();
-      await updatePublication(idToken, editingPub._id, editForm);
+
+      const activeAuthors = editAuthors.filter((a) => a.name.trim() !== "");
+      if (activeAuthors.length === 0) {
+        throw new Error("At least one author name is required.");
+      }
+      const serializedAuthors = JSON.stringify(activeAuthors);
+
+      await updatePublication(idToken, editingPub._id, {
+        ...editForm,
+        authors: serializedAuthors,
+      });
 
       setReviewMessage("Publication updated successfully.");
       setEditingPub(null);
@@ -1102,6 +1218,9 @@ export default function AdminDashboard() {
                   >
                     <option value="Other">Other</option>
                     <option value="IEEE">IEEE</option>
+                    <option value="Elsevier">Elsevier</option>
+                    <option value="ACM Library">ACM Library</option>
+                    <option value="AIP">AIP</option>
                     <option value="Springer">Springer</option>
                     <option value="Taylor Francis">Taylor Francis</option>
                   </select>
@@ -1140,17 +1259,40 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Authors
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Authors (Enter up to 5 initially, or click "+ Add More" for additional authors)
                 </label>
-                <input
-                  type="text"
-                  name="authors"
-                  value={pubForm.authors}
-                  onChange={handlePubChange}
-                  required
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
-                />
+                <div className="space-y-3">
+                  {pubAuthors.map((author, index) => (
+                    <div key={index} className="grid grid-cols-[1.5fr_2fr] gap-3 items-center">
+                      <div>
+                        <input
+                          type="text"
+                          placeholder={`${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"} Author Name`}
+                          value={author.name}
+                          onChange={(e) => handlePubAuthorChange(index, "name", e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="url"
+                          placeholder={`${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"} Author Scholar Link`}
+                          value={author.scholarLink}
+                          onChange={(e) => handlePubAuthorChange(index, "scholarLink", e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddMorePubAuthor}
+                  className="mt-3 text-xs text-midTeal hover:text-accentTeal font-bold flex items-center gap-1"
+                >
+                  + Add More Author
+                </button>
               </div>
 
               <div>
@@ -1305,7 +1447,7 @@ export default function AdminDashboard() {
                                 {pub.title}
                               </div>
                               <div className="text-xs text-gray-500 line-clamp-2">
-                                {pub.authors}
+                                {renderAuthors(pub.authors)}
                               </div>
                             </td>
                             <td className="py-2 pr-4 text-xs text-gray-700">
@@ -1448,6 +1590,9 @@ export default function AdminDashboard() {
                         >
                           <option value="Other">Other</option>
                           <option value="IEEE">IEEE</option>
+                          <option value="Elsevier">Elsevier</option>
+                          <option value="ACM Library">ACM Library</option>
+                          <option value="AIP">AIP</option>
                           <option value="Springer">Springer</option>
                           <option value="Taylor Francis">Taylor Francis</option>
                         </select>
@@ -1486,17 +1631,40 @@ export default function AdminDashboard() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Authors
+                      <label className="block text-xs font-semibold text-gray-700 mb-2">
+                        Authors (Enter up to 5 initially, or click "+ Add More" for additional authors)
                       </label>
-                      <input
-                        type="text"
-                        name="authors"
-                        value={editForm.authors}
-                        onChange={handleEditChange}
-                        required
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
-                      />
+                      <div className="space-y-3">
+                        {editAuthors.map((author, index) => (
+                          <div key={index} className="grid grid-cols-[1.5fr_2fr] gap-3 items-center">
+                            <div>
+                              <input
+                                type="text"
+                                placeholder={`${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"} Author Name`}
+                                value={author.name}
+                                onChange={(e) => handleEditAuthorChange(index, "name", e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                              />
+                            </div>
+                            <div>
+                              <input
+                                type="url"
+                                placeholder={`${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"} Scholar Link`}
+                                value={author.scholarLink}
+                                onChange={(e) => handleEditAuthorChange(index, "scholarLink", e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-midTeal/50"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddMoreEditAuthor}
+                        className="mt-3 text-xs text-midTeal hover:text-accentTeal font-bold flex items-center gap-1"
+                      >
+                        + Add More Author
+                      </button>
                     </div>
 
                     <div>

@@ -129,6 +129,26 @@ export async function getPublicationsPublic() {
   return res.json();
 }
 
+export async function getPublicationByIdPublic(pubId) {
+  const res = await fetch(`${API_BASE}/api/publications/${pubId}`, {
+    method: "GET",
+  });
+
+  if (!res.ok) {
+    let message = `Request failed with status ${res.status}`;
+    try {
+      const errorData = await res.json();
+      message = errorData.message || message;
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+
 // ---------- TEAMS (Admin) ----------
 export function getAllTeams(idToken) {
   return authFetch("/api/admin/teams", { method: "GET" }, idToken);
