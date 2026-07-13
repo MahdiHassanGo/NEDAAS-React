@@ -291,7 +291,8 @@ const teamMembers = {
       name: "Dr Syed Mohammed Shamsul Islam",
       role: "Senior Advisor",
       affiliation:
-        "Senior Lecturer, Discipline of Computing and Security, School of Science, Edith Cowan University, Perth, Western Australia and ⁠Adjunct Senior Lecturer, Department of Computer Science and Software Engineering, The University of Western Australia",
+        "Senior Lecturer, Discipline of Computing and Security, School of Science, Edith Cowan University, Perth, Western Australia\n\nAdjunct Senior Lecturer, Department of Computer Science and Software Engineering, The University of Western Australia",
+        
       image: "/Images/senior 1.jpeg",
     },
      
@@ -774,7 +775,7 @@ function MemberCard({ member, size = "md", index = 0, enableTilt = false }) {
           </div>
 
           {member.affiliation && (
-            <p className="mt-2 max-w-full text-[11px] leading-relaxed text-gray-400">
+            <p className="mt-2 max-w-full text-[11px] leading-relaxed text-gray-400 whitespace-pre-line">
               {member.affiliation}
             </p>
           )}
