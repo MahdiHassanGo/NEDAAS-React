@@ -288,12 +288,29 @@ const teamMembers = {
   ],
   advisors: [
     {
+      name: "Dr Syed Mohammed Shamsul Islam",
+      role: "Senior Advisor",
+      affiliation:
+        "Senior Lecturer, Discipline of Computing and Security, School of Science, Edith Cowan University, Perth, Western Australia and ⁠Adjunct Senior Lecturer, Department of Computer Science and Software Engineering, The University of Western Australia",
+      image: "/Images/senior 1.jpeg",
+    },
+     
+    {
+      name: "Dr. Md. Obaidur Rahaman",
+      role: "Senior Advisor",
+      affiliation:
+        "Professor, Department of Computer Science and Engineering, Uttara University, Dhaka, Bangladesh",
+      image: "/Images/senior 2.jpeg",
+    },
+    {
       name: "Dr. Md. Ashraful Babu",
       role: "Senior Advisor",
       affiliation:
         "Assistant Professor, Department of Physical Sciences, Independent University, Bangladesh",
       image: "/Images/advisor2.jpg",
     },
+   
+    
     {
       name: "Mejbah Ahammad",
       role: "Advisor",
