@@ -311,14 +311,7 @@ const teamMembers = {
       image: "/Images/advisor2.jpg",
     },
    
-    
-    {
-      name: "Mejbah Ahammad",
-      role: "Advisor",
-      affiliation:
-        "Lecturer, Department of Computer Science, American International University-Bangladesh",
-      image: "/Images/Advisor1.jpg",
-    },
+
   ],
   leads: [
     {
