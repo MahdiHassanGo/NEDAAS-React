@@ -284,6 +284,12 @@ const teamMembers = {
       affiliation:
         "Lecturer, Department of Computer Science and Engineering, Uttara University",
       image: "/Images/Tahsin.png",
+    },  {
+      name: "Dr. Md. Obaidur Rahaman",
+      role: "Deputy Director",
+      affiliation:
+        "Professor, Department of Computer Science and Engineering, Uttara University, Dhaka, Bangladesh",
+      image: "/Images/senior 2.jpeg",
     },
   ],
   advisors: [
@@ -296,13 +302,7 @@ const teamMembers = {
       image: "/Images/senior 1.jpeg",
     },
      
-    {
-      name: "Dr. Md. Obaidur Rahaman",
-      role: "Deputy Director",
-      affiliation:
-        "Professor, Department of Computer Science and Engineering, Uttara University, Dhaka, Bangladesh",
-      image: "/Images/senior 2.jpeg",
-    },
+  
     {
       name: "Dr. Md. Ashraful Babu",
       role: "Senior Advisor",
