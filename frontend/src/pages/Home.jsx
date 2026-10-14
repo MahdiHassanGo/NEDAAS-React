@@ -282,7 +282,7 @@ const teamMembers = {
       name: "K M Tahsin Kabir",
       role: "Deputy Director",
       affiliation:
-        "Lecturer, Department of Computer Science and Engineering, Asian University of Bangladesh",
+        "Lecturer, Department of Computer Science and Engineering, Uttara University",
       image: "/Images/Tahsin.png",
     },
   ],
@@ -298,7 +298,7 @@ const teamMembers = {
      
     {
       name: "Dr. Md. Obaidur Rahaman",
-      role: "Senior Advisor",
+      role: "Deputy Director",
       affiliation:
         "Professor, Department of Computer Science and Engineering, Uttara University, Dhaka, Bangladesh",
       image: "/Images/senior 2.jpeg",
@@ -317,7 +317,7 @@ const teamMembers = {
     {
       name: "Mahin Montasir Afif",
       role: "CVPR & Bioinformatics",
-      image: "/Images/passport-size_photo.jpg",
+      image: "/Images/Afif.jpeg",
     },
     {
       name: "Sunipun Seemanta",
@@ -1532,7 +1532,7 @@ export default function Home() {
               },
               {
                 key: "advisors",
-                label: "Scientific Advisors",
+                label: "Senior Researchers",
                 members: teamMembers.advisors,
                 cols: "md:grid-cols-2",
                 size: "lg",
