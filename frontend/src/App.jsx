@@ -14,6 +14,7 @@ const MemberDashboard = lazy(() => import("./pages/dashboards/MemberDashboard"))
 const AdminDashboard = lazy(() => import("./pages/dashboards/AdminDashboard"));
 
 const PublicationDetail = lazy(() => import("./pages/PublicationDetail"));
+const FoundingMembers = lazy(() => import("./pages/FoundingMembers"));
 
 function PageLoader() {
   return (
@@ -39,9 +40,12 @@ function App() {
       "/Images/SIFAT.jpg",
       "/Images/MOYNUL.png",
       "/Images/Arko.png",
+      "/Images/Afif.jpeg",
       "/Images/tamim.png",
       "/Images/chaki.jpeg",
-      "/Images/Asif.png"
+      "/Images/Asif.png",
+      "/Images/senior 1.jpeg",
+      "/Images/senior 2.jpeg"
     ];
 
     const preloadImage = (src) => {
@@ -110,6 +114,24 @@ function App() {
           element={
             <Layout fullWidth>
               <PublicationDetail />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/founding-members"
+          element={
+            <Layout fullWidth>
+              <FoundingMembers />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/founding-team"
+          element={
+            <Layout fullWidth>
+              <FoundingMembers />
             </Layout>
           }
         />

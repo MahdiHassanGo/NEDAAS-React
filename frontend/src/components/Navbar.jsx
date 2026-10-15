@@ -79,6 +79,7 @@ export default function Navbar() {
     { id: "about", label: "About" },
     { id: "publications", label: "Publications" },
     { id: "team", label: "Team" },
+    { id: "founding-members", label: "Founding Members", path: "/founding-members" },
     { id: "contact", label: "Contact" },
   ];
 
@@ -101,18 +102,43 @@ export default function Navbar() {
   </Link>
 
           {/* Desktop nav */}
-          <div className="hidden items-center gap-5 md:flex">
-            <div className="flex items-center gap-5">
-              {navLinks.map((link) => (
-                <button
-                  key={link.id}
-                  type="button"
-                  onClick={() => scrollToSection(link.id)}
-                  className="relative text-deepTeal transition-colors hover:text-midTeal after:absolute after:bottom-[-6px] after:left-0 after:h-0.5 after:w-0 after:bg-gradient-to-r after:from-midTeal after:to-accentTeal after:transition-all hover:after:w-full"
-                >
-                  {link.label}
-                </button>
-              ))}
+          <div className="hidden items-center gap-4 lg:gap-6 md:flex">
+            <div className="flex items-center gap-4 lg:gap-6 text-sm lg:text-base">
+              {navLinks.map((link) => {
+                const isRouteActive = link.path && location.pathname === link.path;
+                const isSectionActive =
+                  !link.path &&
+                  location.pathname === "/" &&
+                  ((!location.hash && link.id === "home") || location.hash === `#${link.id}`);
+                const active = isRouteActive || isSectionActive;
+
+                return link.path ? (
+                  <Link
+                    key={link.id}
+                    to={link.path}
+                    className={`relative transition-colors hover:text-midTeal after:absolute after:bottom-[-6px] after:left-0 after:h-0.5 after:transition-all after:bg-gradient-to-r after:from-midTeal after:to-accentTeal ${
+                      active
+                        ? "text-midTeal font-bold after:w-full"
+                        : "text-deepTeal hover:after:w-full"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <button
+                    key={link.id}
+                    type="button"
+                    onClick={() => scrollToSection(link.id)}
+                    className={`relative transition-colors hover:text-midTeal after:absolute after:bottom-[-6px] after:left-0 after:h-0.5 after:transition-all after:bg-gradient-to-r after:from-midTeal after:to-accentTeal ${
+                      active
+                        ? "text-midTeal font-bold after:w-full"
+                        : "text-deepTeal hover:after:w-full"
+                    }`}
+                  >
+                    {link.label}
+                  </button>
+                );
+              })}
             </div>
 
             {firebaseUser ? (
@@ -168,21 +194,47 @@ export default function Navbar() {
         {/* Mobile menu */}
         <div
           className={`overflow-hidden transition-all duration-300 md:hidden ${
-            mobileOpen ? "max-h-[420px] pb-4 opacity-100" : "max-h-0 opacity-0"
+            mobileOpen ? "max-h-[520px] pb-4 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
           <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <div className="flex flex-col">
-              {navLinks.map((link) => (
-                <button
-                  key={link.id}
-                  type="button"
-                  onClick={() => scrollToSection(link.id)}
-                  className="rounded-xl px-4 py-3 text-left text-deepTeal transition-colors hover:bg-slate-50 hover:text-midTeal"
-                >
-                  {link.label}
-                </button>
-              ))}
+              {navLinks.map((link) => {
+                const isRouteActive = link.path && location.pathname === link.path;
+                const isSectionActive =
+                  !link.path &&
+                  location.pathname === "/" &&
+                  ((!location.hash && link.id === "home") || location.hash === `#${link.id}`);
+                const active = isRouteActive || isSectionActive;
+
+                return link.path ? (
+                  <Link
+                    key={link.id}
+                    to={link.path}
+                    onClick={() => setMobileOpen(false)}
+                    className={`rounded-xl px-4 py-3 text-left transition-colors hover:bg-slate-50 hover:text-midTeal ${
+                      active
+                        ? "bg-slate-50 font-bold text-midTeal"
+                        : "text-deepTeal"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <button
+                    key={link.id}
+                    type="button"
+                    onClick={() => scrollToSection(link.id)}
+                    className={`rounded-xl px-4 py-3 text-left transition-colors hover:bg-slate-50 hover:text-midTeal ${
+                      active
+                        ? "bg-slate-50 font-bold text-midTeal"
+                        : "text-deepTeal"
+                    }`}
+                  >
+                    {link.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="mt-3 border-t border-slate-100 pt-3">

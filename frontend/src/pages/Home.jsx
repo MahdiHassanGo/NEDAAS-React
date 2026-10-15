@@ -278,13 +278,16 @@ const teamMembers = {
         "Associate Professor, Department of Mathematics, American International University-Bangladesh",
       image: "/Images/Leader.png",
     },
+  ],
+  deputyDirectors: [
     {
       name: "K M Tahsin Kabir",
       role: "Deputy Director",
       affiliation:
         "Lecturer, Department of Computer Science and Engineering, Uttara University",
       image: "/Images/Tahsin.png",
-    },  {
+    },
+    {
       name: "Dr. Md. Obaidur Rahaman",
       role: "Deputy Director",
       affiliation:
@@ -1005,6 +1008,19 @@ export default function Home() {
     setPage((prev) => Math.min(prev, totalPages));
   }, [totalPages]);
 
+  useEffect(() => {
+    if (window.location.hash) {
+      const id = window.location.hash.replace("#", "");
+      const timer = setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({
       behavior: "smooth",
@@ -1522,14 +1538,48 @@ export default function Home() {
               sub="The researchers, advisors, and operators behind NEDAAS."
             />
 
+            {/* Lab Leadership */}
+            <div className="mb-14">
+              <div className="mb-6 flex items-center gap-3">
+                <span className="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.22em] text-midTeal sm:tracking-[0.26em]">
+                  Lab Leadership
+                </span>
+                <GlowRule />
+              </div>
+
+              {/* Lab Director & Founder - Single row, single column */}
+              <div className="mb-6 flex justify-center">
+                <div className="w-full max-w-xl">
+                  {teamMembers.director.map((m, i) => (
+                    <MemberCard
+                      key={`${m.name}-${i}`}
+                      member={m}
+                      size="lg"
+                      index={i}
+                      enableTilt={enableTilt}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Deputy Directors */}
+              {teamMembers.deputyDirectors && teamMembers.deputyDirectors.length > 0 && (
+                <div className="grid gap-5 md:grid-cols-2">
+                  {teamMembers.deputyDirectors.map((m, i) => (
+                    <MemberCard
+                      key={`${m.name}-${i}`}
+                      member={m}
+                      size="lg"
+                      index={i + 1}
+                      enableTilt={enableTilt}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Senior Researchers & Research Leads */}
             {[
-              {
-                key: "director",
-                label: "Lab Leadership",
-                members: teamMembers.director,
-                cols: "md:grid-cols-2",
-                size: "lg",
-              },
               {
                 key: "advisors",
                 label: "Senior Researchers",
@@ -1606,6 +1656,17 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Link to Founding Members */}
+            <div className="mt-14 flex justify-center">
+              <Link
+                to="/founding-members"
+                className="group inline-flex items-center gap-3 rounded-full border border-midTeal/30 bg-gradient-to-r from-midTeal/10 via-accentTeal/10 to-midTeal/10 px-6 py-3.5 text-xs font-bold text-deepTeal shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-midTeal hover:bg-gradient-to-r hover:from-midTeal hover:to-accentTeal hover:text-white hover:shadow-lg sm:text-sm"
+              >
+                <span>Discover NEDAAS Founding Members</span>
+                <span className="transition-transform group-hover:translate-x-1">→</span>
+              </Link>
             </div>
           </Container>
         </section>
