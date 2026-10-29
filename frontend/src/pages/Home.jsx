@@ -343,6 +343,36 @@ const teamMembers = {
       image: "/Images/Arko.png",
     },
   ],
+  associates: [
+    {
+      name: "Ishtiak Mahmud Saad",
+      role: "Research Associate",
+      affiliation:
+        "Bsc in Material Science & Engineering,\nRajshahi University of Engineering & Technology,Rajshahi,Bangladesh",
+      image: "/Images/IshtiakSaad.jpeg",
+    },
+    {
+      name: "Mahdi Ul Bari",
+      role: "Research Associate",
+      affiliation:
+        "Clinical Physiotherapist,\n Centre for the Rehabilitation of the Paralysed (CRP), Dhaka Bangladesh",
+      image: "/Images/MahdiBari.jpeg",
+    },
+    {
+      name: "Ariful Islam Riad",
+      role: "Research Associate",
+      affiliation:
+        "Bsc in Mechatronics,\nRajshahi University of Engineering & Technology,Rajshahi,Bangladesh",
+      image: "/Images/ArifulRiad.jpeg",
+    },
+    {
+      name: "Abid Yeasar Shadman",
+      role: "Research Associate",
+      affiliation:
+        "Msc. In Economics\nUniversity of Copenhagen,Denmark",
+      image: "/Images/Abid.jpeg",
+    },
+  ],
   hrm: [
     {
       name: "Tamim Hasan Apurbo",
@@ -1578,7 +1608,7 @@ export default function Home() {
               )}
             </div>
 
-            {/* Senior Researchers & Research Leads */}
+            {/* Senior Researchers, Research Leads & Research Associates */}
             {[
               {
                 key: "advisors",
@@ -1592,6 +1622,13 @@ export default function Home() {
                 label: "Research Leads",
                 members: teamMembers.leads,
                 cols: "sm:grid-cols-2 lg:grid-cols-3",
+                size: "md",
+              },
+              {
+                key: "associates",
+                label: "Research Associates",
+                members: teamMembers.associates,
+                cols: "sm:grid-cols-2 lg:grid-cols-4",
                 size: "md",
               },
             ].map(({ key, label, members, cols, size }) => (
