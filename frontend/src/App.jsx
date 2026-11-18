@@ -45,7 +45,8 @@ function App() {
       "/Images/chaki.jpeg",
       "/Images/Asif.png",
       "/Images/senior 1.jpeg",
-      "/Images/senior 2.jpeg"
+      "/Images/senior 2.jpeg",
+      "/Images/JasimUddin.png"
     ];
 
     const preloadImage = (src) => {

@@ -305,7 +305,13 @@ const teamMembers = {
       image: "/Images/senior 1.jpeg",
     },
      
-  
+   {
+      name: "Dr. Jasim Uddin",
+      role: "Senior Advisor",
+      affiliation:
+        "Senior Lecturer (Associate Professor) in Electronics Engineering, School of Technologies, Cardiff Metropolitan University, UK\n\nLead, EM-RFMic Engineering Group",
+      image: "/Images/JasimUddin.png",
+    },
     {
       name: "Dr. Md. Ashraful Babu",
       role: "Senior Advisor",
@@ -314,7 +320,6 @@ const teamMembers = {
       image: "/Images/advisor2.jpg",
     },
    
-
   ],
   leads: [
     {
@@ -1614,7 +1619,7 @@ export default function Home() {
                 key: "advisors",
                 label: "Senior Researchers",
                 members: teamMembers.advisors,
-                cols: "md:grid-cols-2",
+                cols: "sm:grid-cols-2 lg:grid-cols-3",
                 size: "lg",
               },
               {
